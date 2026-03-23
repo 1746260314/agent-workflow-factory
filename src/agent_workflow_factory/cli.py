@@ -70,6 +70,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
             {
                 "project_dir": result.project_dir,
                 "task_name": result.task_name,
+                "case_count": result.case_count,
                 "files_created": result.files_created,
                 "notes": result.notes,
                 "ai_handoff_path": result.ai_handoff_path,

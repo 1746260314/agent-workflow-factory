@@ -6,6 +6,7 @@
   "required": [
     "project_dir",
     "task_name",
+    "case_count",
     "files_created",
     "notes",
     "ai_handoff_path",
@@ -14,6 +15,7 @@
   "properties": {
     "project_dir": { "type": "string" },
     "task_name": { "type": "string" },
+    "case_count": { "type": "integer" },
     "files_created": {
       "type": "array",
       "items": { "type": "string" }

@@ -1,6 +1,7 @@
 {
   "project_dir": "/tmp/example-target",
   "task_name": "connect-real-api",
+  "case_count": 6,
   "files_created": [
     "tracking/connect-real-api/ai_handoff.md",
     "tracking/connect-real-api/findings.md",

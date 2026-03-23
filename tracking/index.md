@@ -17,6 +17,10 @@ status: active
 - 状态：in_progress
 - 目标：用本项目自己的 loop 思路完成本项目 MVP 开发
 
+2. `v0.2-foundation`
+- 状态：in_progress
+- 目标：把 MVP 提升为可长期使用的项目级 AI loop 工具
+
 ## 约定
 
 1. 不在项目根目录直接放 `task_plan.md`、`findings.md`、`progress.md`

@@ -16,6 +16,7 @@ class PlanResult:
     notes: list[str]
     ai_handoff_path: str
     ai_handoff_prompt: str
+    case_count: int
 
 
 def _slugify(value: str) -> str:
@@ -58,8 +59,174 @@ def _load_project_context(project_dir: Path) -> dict[str, Any]:
     }
 
 
-def _render_task_plan(project_name: str, task_name: str, goal: str, scope: str, skills: list[str]) -> str:
+def _collect_tech_stack(context: dict[str, Any]) -> list[str]:
+    scan_result = context.get("scan_result") or {}
+    repos = scan_result.get("repos") or []
+    values: list[str] = []
+    for repo in repos:
+        for item in repo.get("tech_stack") or []:
+            if item not in values:
+                values.append(item)
+    return values
+
+
+def _detect_requirement_signals(goal: str, scope: str, tech_stack: list[str], scan_result: dict[str, Any]) -> dict[str, Any]:
+    text = f"{goal} {scope}".lower()
+    is_frontend = any(token in text for token in ["页面", "首页", "列表", "组件", "前端", "ui"]) or any(
+        token in tech_stack for token in ["react", "taro", "vue", "nextjs", "miniapp"]
+    )
+    is_backend = any(token in text for token in ["接口", "后端", "服务", "api", "数据库", "迁移"]) or "go" in tech_stack
+    needs_docs = any(token in text for token in ["文档", "说明", "readme", "playbook"])
+    needs_test = any(token in text for token in ["测试", "验收", "联调", "e2e", "build"])
+    is_multi_repo = (scan_result.get("summary") or {}).get("repo_count", 0) > 1
+    complexity = "medium"
+    if any(token in text for token in ["重构", "架构", "矩阵", "多 repo", "多仓库", "loop", "自动化"]):
+        complexity = "high"
+    elif any(token in text for token in ["小改", "修复", "文案", "样式"]):
+        complexity = "low"
+    return {
+        "frontend": is_frontend,
+        "backend": is_backend,
+        "docs": needs_docs,
+        "test": needs_test,
+        "multi_repo": is_multi_repo,
+        "complexity": complexity,
+    }
+
+
+def _build_cases(goal: str, scope: str, signals: dict[str, Any]) -> list[dict[str, Any]]:
+    cases: list[dict[str, Any]] = [
+        {
+            "id": "C1",
+            "title": "对齐需求与边界",
+            "status": "pending",
+            "goal": "确认需求目标、范围、约束和已有上下文",
+            "commands": [],
+            "tests": [],
+            "notes": [],
+            "history": [],
+        },
+        {
+            "id": "C2",
+            "title": "设计实现方案",
+            "status": "pending",
+            "goal": "设计本轮实现所需的结构、接口、数据模型和策略",
+            "commands": [],
+            "tests": [],
+            "notes": [],
+            "history": [],
+        },
+    ]
+
+    next_id = 3
+    if signals["frontend"]:
+        cases.append(
+            {
+                "id": f"C{next_id}",
+                "title": "前端页面与组件实现",
+                "status": "pending",
+                "goal": "完成页面、组件、交互或样式相关实现",
+                "commands": [],
+                "tests": [],
+                "notes": [],
+                "history": [],
+            }
+        )
+        next_id += 1
+
+    if signals["backend"]:
+        cases.append(
+            {
+                "id": f"C{next_id}",
+                "title": "后端接口与数据实现",
+                "status": "pending",
+                "goal": "完成接口、服务、数据模型或数据库相关实现",
+                "commands": [],
+                "tests": [],
+                "notes": [],
+                "history": [],
+            }
+        )
+        next_id += 1
+
+    if signals["complexity"] == "high":
+        cases.append(
+            {
+                "id": f"C{next_id}",
+                "title": "结构与依赖收口",
+                "status": "pending",
+                "goal": "处理跨模块或跨仓库的结构调整与依赖问题",
+                "commands": [],
+                "tests": [],
+                "notes": [],
+                "history": [],
+            }
+        )
+        next_id += 1
+
+    if signals["docs"]:
+        cases.append(
+            {
+                "id": f"C{next_id}",
+                "title": "文档与规则更新",
+                "status": "pending",
+                "goal": "同步更新说明文档、规则或示例",
+                "commands": [],
+                "tests": [],
+                "notes": [],
+                "history": [],
+            }
+        )
+        next_id += 1
+
+    cases.append(
+        {
+            "id": f"C{next_id}",
+            "title": "测试与验收",
+            "status": "pending",
+            "goal": "完成构建、测试、smoke 或联调验收",
+            "commands": [],
+            "tests": [],
+            "notes": [],
+            "history": [],
+        }
+    )
+    next_id += 1
+
+    cases.append(
+        {
+            "id": f"C{next_id}",
+            "title": "收口与同步",
+            "status": "pending",
+            "goal": "更新 tracking，按规则完成提交、推送或阻塞记录",
+            "commands": [],
+            "tests": [],
+            "notes": [],
+            "history": [],
+        }
+    )
+    return cases
+
+
+def _render_case_table(cases: list[dict[str, Any]]) -> str:
+    lines = ["| Case | 状态 | 说明 | 验收 |", "| --- | --- | --- | --- |"]
+    for case in cases:
+        lines.append(f"| {case['id']} | {case['status']} | {case['title']} | 待补具体验收 |")
+    return "\n".join(lines)
+
+
+def _render_task_plan(project_name: str, task_name: str, goal: str, scope: str, skills: list[str], cases: list[dict[str, Any]], signals: dict[str, Any]) -> str:
     skills_text = ", ".join(skills) if skills else "planning-with-files, split-up-task, task-manager"
+    signal_lines = []
+    for key, label in [
+        ("frontend", "前端相关"),
+        ("backend", "后端相关"),
+        ("docs", "需要文档"),
+        ("test", "强调测试/验收"),
+        ("complexity", "复杂度"),
+    ]:
+        signal_lines.append(f"- {label}：{signals[key]}")
+    signal_text = "\n".join(signal_lines)
     return f"""---
 title: {project_name} {task_name} Task Plan
 created: 2026-03-23
@@ -79,15 +246,13 @@ status: active
 - 预期输出：按 case 顺序完成分析、设计、实现、验收和收口
 - 验收方式：至少完成一轮源码级或命令级验收，并更新 tracking
 
+## 任务信号
+
+{signal_text}
+
 ## Case 列表
 
-| Case | 状态 | 说明 | 验收 |
-| --- | --- | --- | --- |
-| C1 | pending | 对齐需求、边界与已有上下文 | 任务重述确认，关键约束记录完整 |
-| C2 | pending | 设计技术方案与必要数据结构 | 方案落文档，关键接口/数据结构明确 |
-| C3 | pending | 完成最小实现 | 关键代码完成 |
-| C4 | pending | 执行测试与验收 | 至少一项测试或构建通过 |
-| C5 | pending | 更新 tracking 并收口提交 | tracking 完整更新 |
+{_render_case_table(cases)}
 
 ## 当前执行指令
 
@@ -160,69 +325,19 @@ def _build_ai_handoff_prompt(project_name: str, task_name: str, goal: str, scope
     )
 
 
-def _render_loop_cases(goal: str, scope: str) -> dict[str, Any]:
+def _render_loop_cases(goal: str, scope: str, cases: list[dict[str, Any]], signals: dict[str, Any]) -> dict[str, Any]:
     return {
         "version": 1,
         "project_goal": goal,
         "scope": scope,
+        "planning_signals": signals,
         "workflow_rules": [
             "一次只处理一个 case",
             "当前 case 完成后才能进入下一个 case",
             "每个 case 完成后必须更新 tracking",
             "若项目已接远端，提交后必须 push",
         ],
-        "cases": [
-            {
-                "id": "C1",
-                "title": "对齐需求与边界",
-                "status": "pending",
-                "goal": "确认需求目标、范围、约束和已有上下文",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            },
-            {
-                "id": "C2",
-                "title": "设计实现方案",
-                "status": "pending",
-                "goal": "设计本轮实现所需的结构、接口、数据模型和策略",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            },
-            {
-                "id": "C3",
-                "title": "实现最小可交付代码",
-                "status": "pending",
-                "goal": "完成本轮最小闭环实现",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            },
-            {
-                "id": "C4",
-                "title": "测试与验收",
-                "status": "pending",
-                "goal": "完成构建、测试或 smoke，确认结果",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            },
-            {
-                "id": "C5",
-                "title": "收口与同步",
-                "status": "pending",
-                "goal": "更新 tracking，按规则完成提交或标记阻塞",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            },
-        ],
+        "cases": cases,
     }
 
 
@@ -236,15 +351,18 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
     context = _load_project_context(project_dir)
     resolved_task_name = task_name or _slugify(goal)[:48]
     skills = context.get("recommended_skills") or []
+    tech_stack = _collect_tech_stack(context)
+    signals = _detect_requirement_signals(goal, scope, tech_stack, context.get("scan_result") or {})
+    cases = _build_cases(goal, scope, signals)
 
     task_dir = project_dir / "tracking" / resolved_task_name
     files_created: list[str] = []
 
     generated_files: dict[Path, str] = {
-        task_dir / "task_plan.md": _render_task_plan(context["project_name"], resolved_task_name, goal, scope, skills),
+        task_dir / "task_plan.md": _render_task_plan(context["project_name"], resolved_task_name, goal, scope, skills, cases, signals),
         task_dir / "findings.md": _render_findings(goal, scope),
         task_dir / "progress.md": _render_progress(resolved_task_name),
-        task_dir / "loop_cases.json": json.dumps(_render_loop_cases(goal, scope), ensure_ascii=False, indent=2) + "\n",
+        task_dir / "loop_cases.json": json.dumps(_render_loop_cases(goal, scope, cases, signals), ensure_ascii=False, indent=2) + "\n",
         task_dir / "ai_handoff.md": _render_ai_handoff(context["project_name"], resolved_task_name, goal, scope),
     }
 
@@ -253,8 +371,8 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         files_created.append(str(path.relative_to(project_dir)))
 
     notes = [
-        "planner MVP currently emits a generic 5-case queue",
-        "next step is to infer finer-grained cases from repo capabilities and requirement complexity",
+        f"planner emitted {len(cases)} cases based on requirement signals",
+        f"detected signals: {signals}",
     ]
 
     return PlanResult(
@@ -264,4 +382,5 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         notes=notes,
         ai_handoff_path=str((task_dir / "ai_handoff.md").relative_to(project_dir)),
         ai_handoff_prompt=_build_ai_handoff_prompt(context["project_name"], resolved_task_name, goal, scope),
+        case_count=len(cases),
     )
