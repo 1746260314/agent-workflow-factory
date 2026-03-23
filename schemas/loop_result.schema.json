@@ -12,7 +12,10 @@
     "commit_created",
     "commit_message",
     "files_touched",
-    "notes"
+    "notes",
+    "git_sync_performed",
+    "git_push_attempted",
+    "git_push_succeeded"
   ],
   "properties": {
     "case_id": { "type": "string" },
@@ -32,6 +35,9 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "notes": { "type": "string" }
+    "notes": { "type": "string" },
+    "git_sync_performed": { "type": "boolean" },
+    "git_push_attempted": { "type": "boolean" },
+    "git_push_succeeded": { "type": "boolean" }
   }
 }

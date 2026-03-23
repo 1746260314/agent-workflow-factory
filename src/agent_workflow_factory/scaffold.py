@@ -174,6 +174,10 @@ def _render_loop_cases(project_name: str) -> dict[str, Any]:
     return {
         "version": 1,
         "project": project_name,
+        "loop_policy": {
+            "git_pull_before_case": True,
+            "git_push_after_case": False
+        },
         "workflow_rules": [
             "一次只处理一个 case",
             "当前 case 完成后才能进入下一个 case",

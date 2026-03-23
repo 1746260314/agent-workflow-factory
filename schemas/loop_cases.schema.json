@@ -9,6 +9,14 @@
     "project": { "type": "string" },
     "project_goal": { "type": "string" },
     "scope": { "type": "string" },
+    "planning_signals": { "type": "object" },
+    "loop_policy": {
+      "type": "object",
+      "properties": {
+        "git_pull_before_case": { "type": "boolean" },
+        "git_push_after_case": { "type": "boolean" }
+      }
+    },
     "workflow_rules": {
       "type": "array",
       "items": { "type": "string" }

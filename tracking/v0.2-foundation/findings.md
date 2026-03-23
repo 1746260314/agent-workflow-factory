@@ -35,3 +35,12 @@ status: active
    - complexity
    - multi_repo
 3. 单 repo 和多 repo 的判定必须基于 scanner 的 `repo_count`，不能偷懒用技术栈数量近似。
+
+## Loop Git 生命周期新发现
+
+1. `run-loop` 的 clean check 不能把 `tracking/` 和 `.awf/` 下的工作流文件算作业务脏改动，否则会误伤正常使用场景。
+2. 最小 git 生命周期的第一步不是自动 commit，而是：
+   - 识别 git repo
+   - 检查 worktree
+   - 在有远端时按策略 pull / push
+3. `sync_pending` 应作为 case 状态保留，便于后续恢复逻辑接管。

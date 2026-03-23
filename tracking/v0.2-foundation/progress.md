@@ -24,12 +24,18 @@ status: active
   - `uni-box` 首页功能需求 -> 5 cases
   - `chron-matrix` 多 repo loop 重构需求 -> 8 cases
 - 修复 `multi_repo` 判定误差，已验证单仓库场景回正
+- `loop.py` 已新增 git repo 探测、clean check、pull/push 门禁
+- `loop_cases.json` 已新增 `loop_policy`
+- `loop_result.schema.json` 已新增 git sync 结果字段
+- 完成 loop git smoke：
+  - 仅 `tracking/` 变动时允许执行
+  - 业务脏文件存在时阻塞执行
 
 ### 进行中
 
-- `C2.2 实现智能 case 生成 MVP`
+- `C3.2 实现 git lifecycle runner MVP`
 
 ### 下一步
 
-1. 收尾 planner 示例与 README
-2. 进入 `C3`：loop git/sync 生命周期增强
+1. 收尾 `run-loop` 的 sync recovery 策略
+2. 进入 `C4`：executor adapter 设计
