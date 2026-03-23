@@ -10,6 +10,7 @@
     "files_created",
     "notes",
     "ai_handoff_path",
+    "executor_request_path",
     "ai_handoff_prompt"
   ],
   "properties": {
@@ -25,6 +26,7 @@
       "items": { "type": "string" }
     },
     "ai_handoff_path": { "type": "string" },
+    "executor_request_path": { "type": "string" },
     "ai_handoff_prompt": { "type": "string" }
   }
 }

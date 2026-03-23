@@ -285,6 +285,10 @@ def generate_scaffold(workspace: str, output: str, project_name: str | None = No
         "task_name": task_name,
         "recommended_skills": recommended_skills,
         "loop_script": f"scripts/{script_name}",
+        "executor": {
+            "default_adapter": "manual-handoff",
+            "supported_adapters": ["manual-handoff", "cursor", "codex", "claude-code"],
+        },
     }
 
     generated_files: dict[Path, str] = {

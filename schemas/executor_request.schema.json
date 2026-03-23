@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Executor Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "project_name",
+    "project_root",
+    "task_name",
+    "case_id",
+    "goal",
+    "scope",
+    "required_reads",
+    "recommended_skills",
+    "loop",
+    "execution_rules",
+    "supported_adapters",
+    "handoff_prompt"
+  ],
+  "properties": {
+    "version": { "type": "integer" },
+    "project_name": { "type": "string" },
+    "project_root": { "type": "string" },
+    "task_name": { "type": "string" },
+    "case_id": { "type": "string" },
+    "goal": { "type": "string" },
+    "scope": { "type": "string" },
+    "required_reads": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommended_skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["script_path", "cases_file", "tracking_dir"],
+      "properties": {
+        "script_path": { "type": "string" },
+        "cases_file": { "type": "string" },
+        "tracking_dir": { "type": "string" }
+      }
+    },
+    "execution_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "supported_adapters": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "handoff_prompt": { "type": "string" }
+  }
+}

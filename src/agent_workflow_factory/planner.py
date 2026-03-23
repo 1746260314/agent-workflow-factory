@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .executor import build_executor_request
 from .scanner import scan_workspace
 
 
@@ -15,6 +16,7 @@ class PlanResult:
     files_created: list[str]
     notes: list[str]
     ai_handoff_path: str
+    executor_request_path: str
     ai_handoff_prompt: str
     case_count: int
 
@@ -369,6 +371,19 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         task_dir / "progress.md": _render_progress(resolved_task_name),
         task_dir / "loop_cases.json": json.dumps(_render_loop_cases(goal, scope, cases, signals), ensure_ascii=False, indent=2) + "\n",
         task_dir / "ai_handoff.md": _render_ai_handoff(context["project_name"], resolved_task_name, goal, scope),
+        task_dir / "executor_request.json": json.dumps(
+            build_executor_request(
+                project_name=context["project_name"],
+                project_dir=project_dir,
+                task_name=resolved_task_name,
+                goal=goal,
+                scope=scope,
+                recommended_skills=skills,
+                loop_script=((project_dir / ".awf" / "workflow.json").exists() and (_safe_read_json(project_dir / ".awf" / "workflow.json").get("loop_script") or "")) or "",
+            ),
+            ensure_ascii=False,
+            indent=2,
+        ) + "\n",
     }
 
     for path, content in generated_files.items():
@@ -386,6 +401,7 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         files_created=sorted(files_created),
         notes=notes,
         ai_handoff_path=str((task_dir / "ai_handoff.md").relative_to(project_dir)),
+        executor_request_path=str((task_dir / "executor_request.json").relative_to(project_dir)),
         ai_handoff_prompt=_build_ai_handoff_prompt(context["project_name"], resolved_task_name, goal, scope),
         case_count=len(cases),
     )

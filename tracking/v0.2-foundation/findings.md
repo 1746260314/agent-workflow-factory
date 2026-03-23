@@ -46,3 +46,15 @@ status: active
 3. `sync_pending` 应作为 case 状态保留，便于后续恢复逻辑接管。
 4. sync 恢复不应只是插入一个占位 case；`git_sync_recovery` 本身必须能在下一轮主动尝试 pull/push 修复。
 5. 人工介入升级不应覆盖原业务 case，原 case 应继续保留为 `pending` 或 `sync_pending`，让状态机保持可追溯。
+
+## Executor 接口新发现
+
+1. 仅靠 `ai_handoff.md` 还不够，AI 编码工具需要一份机器可读的输入对象，才能稳定接入不同 adapter。
+2. executor 接口的第一版不需要立刻绑定真实平台 SDK，先统一出：
+   - `required_reads`
+   - `recommended_skills`
+   - `loop` 元信息
+   - `handoff_prompt`
+3. `executor_request.json` 应与 `ai_handoff.md` 并存：
+   - markdown 继续服务人工阅读
+   - JSON 负责被 Cursor/Codex/Claude Code 等工具程序化消费

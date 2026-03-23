@@ -32,12 +32,19 @@ status: active
   - 业务脏文件存在时阻塞执行
   - push 失败时自动插入 `git_sync_recovery`
   - recovery 超过重试上限后自动升级为 `git_sync_manual_intervention`
+- 新增 `src/agent_workflow_factory/executor.py`
+- 新增 `schemas/executor_request.schema.json`
+- `plan` 输出新增 `executor_request_path`
+- `tracking/<task-name>/` 现在会生成 `executor_request.json`
+- 完成 executor request smoke：
+  - `plan` CLI 正确返回 `executor_request_path`
+  - 生成结果包含 `supported_adapters` 与 `required_reads`
 
 ### 进行中
 
-- `C4.1 定义 executor adapter 接口`
+- `C4.2 生成 AI tool handoff bundle`
 
 ### 下一步
 
-1. 设计 executor adapter 接口与 schema
-2. 进入 `C4.2`：生成更完整的 AI handoff bundle
+1. 将 `ai_handoff.md + executor_request.json` 收敛为更完整的 handoff bundle
+2. 再补 README、examples 与 schema 示例

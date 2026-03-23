@@ -79,10 +79,13 @@ cd agent-workflow-factory
 - `tracking/<task-name>/progress.md`
 - `tracking/<task-name>/loop_cases.json`
 - `tracking/<task-name>/ai_handoff.md`
+- `tracking/<task-name>/executor_request.json`
 
 ### 4. 把任务交给 AI 编码工具
 
 `ai_handoff.md` 就是给 AI 工具的接力说明。
+
+`executor_request.json` 是机器可读的 handoff 输入，适合被不同 AI 工具或后续 executor adapter 直接读取。
 
 你可以把它交给：
 - Cursor
