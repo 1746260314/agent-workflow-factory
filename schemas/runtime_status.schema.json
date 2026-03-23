@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Runtime Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "running",
+    "started_at",
+    "updated_at",
+    "pid",
+    "current_case_id",
+    "current_case_title",
+    "iteration",
+    "phase",
+    "current_run_dir",
+    "last_message"
+  ],
+  "properties": {
+    "running": { "type": "boolean" },
+    "started_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "pid": { "type": "integer" },
+    "current_case_id": { "type": "string" },
+    "current_case_title": { "type": "string" },
+    "iteration": { "type": "integer" },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "starting",
+        "syncing",
+        "implementing",
+        "testing",
+        "committing",
+        "pushing",
+        "sync_recovery",
+        "completed",
+        "blocked"
+      ]
+    },
+    "current_run_dir": { "type": "string" },
+    "last_message": { "type": "string" }
+  }
+}

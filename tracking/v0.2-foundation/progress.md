@@ -39,6 +39,12 @@ status: active
 - 完成 executor request smoke：
   - `plan` CLI 正确返回 `executor_request_path`
   - 生成结果包含 `supported_adapters` 与 `required_reads`
+- 新增 `schemas/runtime_status.schema.json`
+- `run-loop` 运行时会持续写入 `.awf/agent_loop_runtime.json`
+- 新增 `status` CLI 和 `./start.sh status`
+- 完成 runtime status smoke：
+  - 运行中返回 `source=runtime`
+  - 完成后回退到静态队列视图
 
 ### 进行中
 

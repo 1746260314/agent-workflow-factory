@@ -16,12 +16,14 @@ Usage:
   ./start.sh scaffold <workspace> [output] [project_name] [task_name]
   ./start.sh plan <project> <goal> <scope> [task_name]
   ./start.sh run-loop <project> <cases_file>
+  ./start.sh status <project> <cases_file>
 
 Examples:
   ./start.sh scan /Users/me/projects/my-app
   ./start.sh scaffold /Users/me/projects/my-app
   ./start.sh plan /Users/me/projects/my-app "开发一个新的首页功能模块" "首页和公共组件"
   ./start.sh run-loop /Users/me/projects/my-app /Users/me/projects/my-app/tracking/homepage-feature/loop_cases.json
+  ./start.sh status /Users/me/projects/my-app /Users/me/projects/my-app/tracking/homepage-feature/loop_cases.json
 EOF
 }
 
@@ -58,6 +60,11 @@ case "$cmd" in
     project="${1:?project is required}"
     cases_file="${2:?cases_file is required}"
     run_cli run-loop --project "$project" --cases-file "$cases_file"
+    ;;
+  status)
+    project="${1:?project is required}"
+    cases_file="${2:?cases_file is required}"
+    run_cli status --project "$project" --cases-file "$cases_file"
     ;;
   *)
     echo "unknown command: $cmd" >&2

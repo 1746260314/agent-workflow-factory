@@ -6,7 +6,7 @@ import json
 from .scanner import scan_workspace
 from .scaffold import generate_scaffold
 from .planner import plan_requirement
-from .loop import run_loop_once
+from .loop import get_loop_status, run_loop_once
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -102,6 +102,12 @@ def cmd_run_loop(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_status(args: argparse.Namespace) -> int:
+    result = get_loop_status(project_root=args.project, cases_file=args.cases_file)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="awf",
@@ -135,6 +141,11 @@ def build_parser() -> argparse.ArgumentParser:
     loop_parser.add_argument("--project", required=True, help="project root path")
     loop_parser.add_argument("--cases-file", required=True, help="path to loop_cases.json")
     loop_parser.set_defaults(func=cmd_run_loop)
+
+    status_parser = subparsers.add_parser("status", help="show runtime status or fallback static queue view")
+    status_parser.add_argument("--project", required=True, help="project root path")
+    status_parser.add_argument("--cases-file", required=True, help="path to loop_cases.json")
+    status_parser.set_defaults(func=cmd_status)
 
     return parser
 

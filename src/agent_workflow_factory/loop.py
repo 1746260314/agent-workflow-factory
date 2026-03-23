@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
@@ -35,6 +36,66 @@ def _load_state(root: Path) -> dict[str, Any]:
 
 def _write_state(root: Path, data: dict[str, Any]) -> None:
     _write_json(root / ".awf" / "state.json", data)
+
+
+def _runtime_path(root: Path) -> Path:
+    return root / ".awf" / "agent_loop_runtime.json"
+
+
+def _pid_alive(pid: int | None) -> bool:
+    if not pid:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def _read_runtime(root: Path) -> dict[str, Any] | None:
+    path = _runtime_path(root)
+    if not path.exists():
+        return None
+    try:
+        data = _load_json(path)
+    except Exception:
+        return None
+    data["process_alive"] = _pid_alive(data.get("pid"))
+    return data
+
+
+def _write_runtime(
+    root: Path,
+    *,
+    running: bool,
+    started_at: str,
+    iteration: int,
+    current_case_id: str,
+    current_case_title: str,
+    phase: str,
+    current_run_dir: str,
+    last_message: str,
+) -> None:
+    payload = {
+        "running": running,
+        "started_at": started_at,
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "pid": os.getpid(),
+        "current_case_id": current_case_id,
+        "current_case_title": current_case_title,
+        "iteration": iteration,
+        "phase": phase,
+        "current_run_dir": current_run_dir,
+        "last_message": last_message,
+    }
+    _write_json(_runtime_path(root), payload)
+
+
+def _detect_command_phase(command: str) -> str:
+    lowered = command.lower()
+    if any(token in lowered for token in [" test", "pytest", "vitest", "jest", "playwright", "cypress", "e2e", "build", "compile"]):
+        return "testing"
+    return "implementing"
 
 
 def _find_next_case(cases: list[dict[str, Any]]) -> dict[str, Any] | None:
@@ -131,6 +192,47 @@ def _persist_result(cases_path: Path, case_id: str, result: dict[str, Any]) -> s
     result_path = cases_path.parent / "runs" / f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{case_id}.result.json"
     _write_json(result_path, result)
     return str(result_path)
+
+
+def get_loop_status(project_root: str, cases_file: str) -> dict[str, Any]:
+    root = Path(project_root).expanduser().resolve()
+    cases_path = Path(cases_file).expanduser().resolve()
+    runtime = _read_runtime(root)
+    if runtime and runtime.get("running") and runtime.get("process_alive"):
+        return {
+            "source": "runtime",
+            "running": True,
+            "runtime": runtime,
+        }
+
+    payload = _load_json(cases_path)
+    cases = payload.get("cases") or []
+    current = _find_next_case(cases)
+    summary = {
+        "pending": sum(1 for case in cases if case.get("status") == "pending"),
+        "in_progress": sum(1 for case in cases if case.get("status") == "in_progress"),
+        "completed": sum(1 for case in cases if case.get("status") == "completed"),
+        "blocked": sum(1 for case in cases if case.get("status") == "blocked"),
+        "failed": sum(1 for case in cases if case.get("status") == "failed"),
+        "sync_pending": sum(1 for case in cases if case.get("status") == "sync_pending"),
+    }
+    latest_result = None
+    runs_dir = cases_path.parent / "runs"
+    if runs_dir.exists():
+        result_files = sorted(runs_dir.glob("*.result.json"))
+        if result_files:
+            latest_result = str(result_files[-1])
+
+    return {
+        "source": "static",
+        "running": False,
+        "runtime": runtime,
+        "cases_file": str(cases_path),
+        "current_case_id": current.get("id") if current else "",
+        "current_case_title": current.get("title") if current else "",
+        "case_summary": summary,
+        "latest_result": latest_result,
+    }
 
 
 def _sync_key(root: Path, branch: str, action: str, case_id: str) -> str:
@@ -309,6 +411,10 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
     cases = payload.get("cases") or []
     loop_policy = payload.get("loop_policy") or {}
     max_sync_retries = int(loop_policy.get("max_sync_retries", 2))
+    iteration = 1
+    existing_runtime = _read_runtime(root) or {}
+    if existing_runtime:
+        iteration = int(existing_runtime.get("iteration") or 0) + 1
 
     current_case = _find_next_case(cases)
     if current_case is None:
@@ -327,6 +433,18 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
     tests_run: list[str] = []
     case_id = current_case["id"]
     current_case["status"] = "in_progress"
+    started_at = datetime.now().isoformat(timespec="seconds")
+    _write_runtime(
+        root,
+        running=True,
+        started_at=started_at,
+        iteration=iteration,
+        current_case_id=case_id,
+        current_case_title=current_case.get("title", case_id),
+        phase="starting",
+        current_run_dir=str(root),
+        last_message="selected current case",
+    )
 
     git_enabled = _is_git_repo(root)
     branch = _current_branch(root) if git_enabled else ""
@@ -343,6 +461,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             }
         )
         _write_json(cases_path, payload)
+        _write_runtime(
+            root,
+            running=False,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="blocked",
+            current_run_dir=str(root),
+            last_message="manual intervention required",
+        )
         result = _build_result(
             case_id,
             "blocked",
@@ -355,6 +484,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
         return LoopRunResult(case_id, "blocked", result_path, [], result["notes"])
 
     if case_id == "git_sync_recovery":
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="sync_recovery",
+            current_run_dir=str(root),
+            last_message="running sync recovery",
+        )
         note, status = _attempt_recovery(
             root=root,
             payload=payload,
@@ -363,6 +503,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             max_retries=max_sync_retries,
         )
         _write_json(cases_path, payload)
+        _write_runtime(
+            root,
+            running=False,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="completed" if status == "completed" else "blocked",
+            current_run_dir=str(root),
+            last_message=note,
+        )
         result = _build_result(
             case_id,
             "completed" if status == "completed" else "blocked",
@@ -385,6 +536,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             }
         )
         _write_json(cases_path, payload)
+        _write_runtime(
+            root,
+            running=False,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="blocked",
+            current_run_dir=str(root),
+            last_message="git worktree is not clean",
+        )
         result = _build_result(
             case_id,
             "blocked",
@@ -397,6 +559,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
         return LoopRunResult(case_id, "blocked", result_path, [], result["notes"])
 
     if do_pull and branch:
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="syncing",
+            current_run_dir=str(root),
+            last_message=f"pulling from origin/{branch}",
+        )
         pulled = _git(["pull", "--ff-only", "origin", branch], root)
         if pulled.returncode != 0:
             note, _ = _handle_sync_failure(
@@ -411,6 +584,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
                 max_retries=max_sync_retries,
             )
             _write_json(cases_path, payload)
+            _write_runtime(
+                root,
+                running=False,
+                started_at=started_at,
+                iteration=iteration,
+                current_case_id=case_id,
+                current_case_title=current_case.get("title", case_id),
+                phase="blocked",
+                current_run_dir=str(root),
+                last_message=note,
+            )
             result = _build_result(
                 case_id,
                 "blocked",
@@ -434,6 +618,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             }
         )
         _write_json(cases_path, payload)
+        _write_runtime(
+            root,
+            running=False,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="blocked",
+            current_run_dir=str(root),
+            last_message="no commands configured for this case",
+        )
         result = _build_result(
             case_id,
             "blocked",
@@ -448,6 +643,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
 
     for command in commands:
         tests_run.append(command)
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase=_detect_command_phase(command),
+            current_run_dir=str(root),
+            last_message=f"running command: {command}",
+        )
         completed = subprocess.run(
             command,
             shell=True,
@@ -467,6 +673,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
                 }
             )
             _write_json(cases_path, payload)
+            _write_runtime(
+                root,
+                running=False,
+                started_at=started_at,
+                iteration=iteration,
+                current_case_id=case_id,
+                current_case_title=current_case.get("title", case_id),
+                phase="blocked",
+                current_run_dir=str(root),
+                last_message=f"command failed: {command}",
+            )
             result = _build_result(
                 case_id,
                 "failed",
@@ -480,6 +697,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             return LoopRunResult(case_id, "failed", result_path, tests_run, result["notes"])
 
     if do_push and branch:
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="pushing",
+            current_run_dir=str(root),
+            last_message=f"pushing to origin/{branch}",
+        )
         pushed = _git(["push", "origin", branch], root)
         if pushed.returncode != 0:
             note, _ = _handle_sync_failure(
@@ -494,6 +722,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
                 max_retries=max_sync_retries,
             )
             _write_json(cases_path, payload)
+            _write_runtime(
+                root,
+                running=False,
+                started_at=started_at,
+                iteration=iteration,
+                current_case_id=case_id,
+                current_case_title=current_case.get("title", case_id),
+                phase="blocked",
+                current_run_dir=str(root),
+                last_message=note,
+            )
             result = _build_result(
                 case_id,
                 "blocked",
@@ -527,6 +766,17 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
                 del bucket[key]
         _write_state(root, state)
     _write_json(cases_path, payload)
+    _write_runtime(
+        root,
+        running=False,
+        started_at=started_at,
+        iteration=iteration,
+        current_case_id=case_id,
+        current_case_title=current_case.get("title", case_id),
+        phase="completed",
+        current_run_dir=str(root),
+        last_message="commands completed successfully",
+    )
 
     result = _build_result(
         case_id,

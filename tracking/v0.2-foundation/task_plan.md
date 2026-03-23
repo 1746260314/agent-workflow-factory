@@ -37,6 +37,7 @@ status: active
 | C2.2 实现智能 case 生成 MVP | completed | 已让 `plan` 生成可变数量和不同类型的 case，并完成差异化 smoke | `awf plan` smoke |
 | C3.1 定义 loop state / sync schema | completed | 已扩充 git/sync 基础状态和 case 生命周期状态 | schema 完整 |
 | C3.2 实现 git lifecycle runner MVP | completed | 已为 `run-loop` 引入 clean check、pull/push 门禁，并完成 sync recovery 与人工升级策略 | `awf run-loop` smoke |
+| C3.3 增加 runtime status 层 | completed | 已增加 `agent_loop_runtime.json` 和 `status` 命令，可在运行中查看活跃状态 | `awf status` smoke |
 | C4.1 定义 executor adapter 接口 | completed | 已新增机器可读的 `executor_request.json` 与 executor schema，供不同 AI 工具消费 | `awf plan` smoke |
 | C4.2 生成 AI tool handoff bundle | pending | 输出更完整的 handoff 包而不是单文件 | 示例可用 |
 | C5.1 补多 repo 示例 | pending | 使用 workspace 示例验证多 repo 输出 | 示例可读 |
@@ -57,3 +58,8 @@ status: active
 5. `plan` 已同时生成：
    - 人类可读的 `ai_handoff.md`
    - 机器可读的 `executor_request.json`
+6. `status` 已支持优先展示运行态：
+   - loop 是否仍存活
+   - 当前 case / phase
+   - 当前运行目录
+   - 最近更新时间与最后消息

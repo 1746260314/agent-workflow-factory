@@ -58,3 +58,13 @@ status: active
 3. `executor_request.json` 应与 `ai_handoff.md` 并存：
    - markdown 继续服务人工阅读
    - JSON 负责被 Cursor/Codex/Claude Code 等工具程序化消费
+
+## Runtime Status 新发现
+
+1. 用户真正关心的不是“有没有 `runs/*.json`”，而是：
+   - loop 主进程是否活着
+   - 当前停在什么 case
+   - 当前处于哪个 phase
+   - 最近一次更新时间是什么时候
+2. 所以 `status` 命令不能只读静态 case 队列，必须优先读运行态文件。
+3. 运行态文件应被忽略，不进入 git；它属于可观察性层，不是项目源码的一部分。

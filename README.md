@@ -106,6 +106,21 @@ cd agent-workflow-factory
 - 更新 case 状态
 - 生成 `runs/*.result.json`
 
+### 6. 查看 loop 运行状态
+
+```bash
+./start.sh status /Users/me/projects/my-app /Users/me/projects/my-app/tracking/<task-name>/loop_cases.json
+```
+
+这个命令会优先显示运行态：
+- loop 主进程是否还活着
+- 当前正在执行哪个 case
+- 当前 phase 是 `implementing`、`testing`、`pushing` 还是 `sync_recovery`
+- 当前运行目录
+- 最近一次更新时间和最后一条消息
+
+如果当前没有活跃 loop，它会自动退回静态队列视图。
+
 ## `start.sh` 支持的命令
 
 ```bash
@@ -114,6 +129,7 @@ cd agent-workflow-factory
 ./start.sh scaffold <workspace> [output] [project_name] [task_name]
 ./start.sh plan <project> <goal> <scope> [task_name]
 ./start.sh run-loop <project> <cases_file>
+./start.sh status <project> <cases_file>
 ```
 
 如果你更喜欢直接调 CLI，也支持：
@@ -129,11 +145,12 @@ PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
 - `scaffold`
 - `plan`
 - `run-loop`
+- `status`
 
 但它还不是完整版，暂时还没有：
 - 自动调用 LLM 写代码
 - 智能拆成很多细 case
-- 完整的 git `pull / commit / push / sync recovery`
+- 自动 commit 阶段与更完整的执行 phase
 - 多 repo 协同 loop
 
 ## 当前目录

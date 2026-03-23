@@ -9,6 +9,7 @@ build/
 
 # Runtime artifacts
 .awf/state.json
+.awf/agent_loop_runtime.json
 .awf/*.lock
 tracking/**/runs/
 *.result.json
