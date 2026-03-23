@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-workflow-factory"
+version = "0.1.0"
+description = "Scan project matrices and generate executable agent workflow plans, tracking artifacts, case queues, and loop runners."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "AI-assisted" }
+]
+dependencies = []
+
+[project.scripts]
+awf = "agent_workflow_factory.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

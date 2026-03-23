@@ -1,0 +1,18 @@
+{
+  "output_dir": "/tmp/example-target",
+  "project_name": "ChronOS",
+  "files_created": [
+    ".awf/workflow.json",
+    "docs/development-playbook.md",
+    "scripts/chronos-loop",
+    "tracking/index.md",
+    "tracking/initial-delivery/findings.md",
+    "tracking/initial-delivery/loop_cases.json",
+    "tracking/initial-delivery/progress.md",
+    "tracking/initial-delivery/task_plan.md"
+  ],
+  "notes": [
+    "scaffold generator currently emits a minimal but runnable project skeleton",
+    "loop script is a skeleton and still needs an executor binding"
+  ]
+}

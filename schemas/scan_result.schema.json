@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workspace Scan Result",
+  "type": "object",
+  "required": ["workspace", "summary", "repos", "recommended_skills", "notes"],
+  "properties": {
+    "workspace": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["exists", "is_dir", "repo_count"],
+      "properties": {
+        "exists": { "type": "boolean" },
+        "is_dir": { "type": "boolean" },
+        "repo_count": { "type": "integer" }
+      }
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "path",
+          "git",
+          "tech_stack",
+          "test_signals",
+          "docs",
+          "automation_signals",
+          "recommended_skills"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "git": { "type": "boolean" },
+          "tech_stack": { "type": "array", "items": { "type": "string" } },
+          "test_signals": { "type": "array", "items": { "type": "string" } },
+          "docs": { "type": "array", "items": { "type": "string" } },
+          "automation_signals": { "type": "array", "items": { "type": "string" } },
+          "recommended_skills": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "recommended_skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

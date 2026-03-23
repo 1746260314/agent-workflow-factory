@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "project_goal": "示例：按 case 顺序完成真实接口接入与自动化验收。",
+  "workflow_rules": [
+    "一次只处理一个 case",
+    "当前 case 必须测试通过后才能提交",
+    "提交后必须更新 tracking",
+    "当前 case 未完成前不进入下一个 case"
+  ],
+  "cases": [
+    {
+      "id": "C1",
+      "title": "示例 case",
+      "status": "pending",
+      "goal": "示例目标",
+      "commands": [
+        "python3 -c \"print('ok')\""
+      ],
+      "tests": [
+        "npm run build"
+      ],
+      "notes": [
+        "这里只是模板"
+      ],
+      "history": []
+    }
+  ]
+}

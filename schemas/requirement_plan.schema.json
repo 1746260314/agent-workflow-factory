@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Requirement Plan Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_dir",
+    "task_name",
+    "files_created",
+    "notes"
+  ],
+  "properties": {
+    "project_dir": { "type": "string" },
+    "task_name": { "type": "string" },
+    "files_created": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

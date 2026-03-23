@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scaffold Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "project_name",
+    "workspace_scan",
+    "task_name",
+    "recommended_skills",
+    "loop_script"
+  ],
+  "properties": {
+    "version": { "type": "integer" },
+    "project_name": { "type": "string" },
+    "workspace_scan": { "type": "object" },
+    "task_name": { "type": "string" },
+    "recommended_skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "loop_script": { "type": "string" }
+  }
+}

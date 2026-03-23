@@ -1,0 +1,18 @@
+{
+  "workspace": "/path/to/workspace",
+  "repos": [
+    {
+      "name": "example-app",
+      "path": "/path/to/workspace/example-app",
+      "git": true,
+      "tech_stack": ["typescript", "react"],
+      "tests": ["vitest"],
+      "docs": ["README.md", "docs/architecture.md"]
+    }
+  ],
+  "recommended_skills": [
+    "planning-with-files",
+    "split-up-task",
+    "task-manager"
+  ]
+}

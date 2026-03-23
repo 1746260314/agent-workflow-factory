@@ -1,0 +1,14 @@
+{
+  "project_dir": "/tmp/example-target",
+  "task_name": "connect-real-api",
+  "files_created": [
+    "tracking/connect-real-api/findings.md",
+    "tracking/connect-real-api/loop_cases.json",
+    "tracking/connect-real-api/progress.md",
+    "tracking/connect-real-api/task_plan.md"
+  ],
+  "notes": [
+    "planner MVP currently emits a generic 5-case queue",
+    "next step is to infer finer-grained cases from repo capabilities and requirement complexity"
+  ]
+}
