@@ -23,7 +23,7 @@ status: active
 | --- | --- | --- |
 | C1 路线图与基线收口 | complete | 已明确 v0.2 目标、边界、里程碑和 case 顺序 |
 | C2 Planner 增强 | complete | 已让需求拆解从固定 5-case 升级为按复杂度和项目能力生成 |
-| C3 Loop Git/Sync 增强 | in_progress | 正在增加 git pull/commit/push/sync recovery 生命周期 |
+| C3 Loop Git/Sync 增强 | complete | 已完成 git pull/push 门禁、sync recovery、人工介入升级链路 |
 | C4 AI Executor 接口增强 | pending | 为 Cursor/Codex/Claude Code 等工具提供稳定 handoff 和 executor 接口 |
 | C5 多 repo 与示例增强 | pending | 让多 repo/workspace 场景更明确，并补充文档与示例 |
 
@@ -36,7 +36,7 @@ status: active
 | C2.1 定义 planner 输入信号与复杂度规则 | completed | 已设计需求复杂度和 repo 能力驱动拆解逻辑 | 规则落地 |
 | C2.2 实现智能 case 生成 MVP | completed | 已让 `plan` 生成可变数量和不同类型的 case，并完成差异化 smoke | `awf plan` smoke |
 | C3.1 定义 loop state / sync schema | completed | 已扩充 git/sync 基础状态和 case 生命周期状态 | schema 完整 |
-| C3.2 实现 git lifecycle runner MVP | in_progress | 已为 `run-loop` 引入 clean check、pull/push 门禁骨架，正在收尾 sync 恢复策略 | `awf run-loop` smoke |
+| C3.2 实现 git lifecycle runner MVP | completed | 已为 `run-loop` 引入 clean check、pull/push 门禁，并完成 sync recovery 与人工升级策略 | `awf run-loop` smoke |
 | C4.1 定义 executor adapter 接口 | pending | 为 AI 工具执行器预留统一接口 | schema/接口落地 |
 | C4.2 生成 AI tool handoff bundle | pending | 输出更完整的 handoff 包而不是单文件 | 示例可用 |
 | C5.1 补多 repo 示例 | pending | 使用 workspace 示例验证多 repo 输出 | 示例可读 |
@@ -52,3 +52,5 @@ status: active
    - 可选 `pull --ff-only`
    - 可选 `push`
    - 失败时写入 `sync_pending` / `blocked`
+   - 自动插入 `git_sync_recovery`
+   - 超过重试上限后升级为 `git_sync_manual_intervention`

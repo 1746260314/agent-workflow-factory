@@ -44,3 +44,5 @@ status: active
    - 检查 worktree
    - 在有远端时按策略 pull / push
 3. `sync_pending` 应作为 case 状态保留，便于后续恢复逻辑接管。
+4. sync 恢复不应只是插入一个占位 case；`git_sync_recovery` 本身必须能在下一轮主动尝试 pull/push 修复。
+5. 人工介入升级不应覆盖原业务 case，原 case 应继续保留为 `pending` 或 `sync_pending`，让状态机保持可追溯。

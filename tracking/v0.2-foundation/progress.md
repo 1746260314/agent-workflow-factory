@@ -30,12 +30,14 @@ status: active
 - 完成 loop git smoke：
   - 仅 `tracking/` 变动时允许执行
   - 业务脏文件存在时阻塞执行
+  - push 失败时自动插入 `git_sync_recovery`
+  - recovery 超过重试上限后自动升级为 `git_sync_manual_intervention`
 
 ### 进行中
 
-- `C3.2 实现 git lifecycle runner MVP`
+- `C4.1 定义 executor adapter 接口`
 
 ### 下一步
 
-1. 收尾 `run-loop` 的 sync recovery 策略
-2. 进入 `C4`：executor adapter 设计
+1. 设计 executor adapter 接口与 schema
+2. 进入 `C4.2`：生成更完整的 AI handoff bundle

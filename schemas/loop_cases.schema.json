@@ -14,7 +14,8 @@
       "type": "object",
       "properties": {
         "git_pull_before_case": { "type": "boolean" },
-        "git_push_after_case": { "type": "boolean" }
+        "git_push_after_case": { "type": "boolean" },
+        "max_sync_retries": { "type": "integer" }
       }
     },
     "workflow_rules": {
