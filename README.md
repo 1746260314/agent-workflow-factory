@@ -1,76 +1,139 @@
 ---
 title: Agent Workflow Factory
 created: 2026-03-20
-author: AI-assisted
+author: cggg
 last_updated: 2026-03-23
-updated_by: AI-assisted
+updated_by: cggg
 status: active
 ---
 
 # Agent Workflow Factory
 
-一个独立的项目级 AI loop 基础设施生成工具。
+给一个项目生成 AI 持续开发所需的基础设施。
 
-它的目标不是直接替代开发者，而是在扫描目标项目之后，为该项目生成一整套“可执行、可验收、可追踪、可恢复”的 AI 持续开发基础设施，包括：
+它当前能做 4 件事：
+- 扫描目标项目
+- 给目标项目生成 playbook、tracking、loop 骨架
+- 把一个需求转成任务流和 case 队列
+- 跑一轮最小 loop
 
-- 项目矩阵扫描
-- 技术栈与工程能力识别
-- skills 推荐与绑定策略
-- playbook / tracking / queue / schema 生成
-- loop runner 与 sync recovery 规则
-- 需求转 case 的规划能力
-- 验收、提交、推送门禁
+## 适合谁
 
-## 设计目标
+适合这类场景：
+- 你有一个本地代码项目
+- 你想让 Cursor、Codex、Claude Code 之类的 AI 工具持续开发它
+- 你希望有统一的 tracking、case、验收和 loop 结构
 
-1. 可被不同项目复用，而不是绑定某一个业务仓库或技术栈
-2. 扫描完成后直接产出一套可被 AI 工具消费的开发基础设施
-3. 同时支持人类可读的 tracking 和机器可读的 queue/schema/result
-4. 让用户在完成项目接入后，只需要继续提供需求和范围即可进入 loop 开发
+## 安装与运行
 
-## 产品定义
+```bash
+git clone <repo-url>
+cd agent-workflow-factory
+./start.sh help
+```
 
-这个项目对外应表现为一个“项目 AI loop 工厂”，而不是单纯的分析器。
+当前直接用本地 Python 运行，不需要额外安装包。
 
-给定一个目标项目，它应该能够：
+## 最短上手流程
 
-1. 扫描项目矩阵与仓库能力
-2. 生成适配该项目的规范、tracking、case queue、loop runner、schema
-3. 基于新需求生成计划与 case 拆解
-4. 驱动 AI 以 loop 方式持续开发、测试、提交与恢复同步问题
+假设你的目标项目是：
 
-## 内部模块
+```bash
+/Users/me/projects/my-app
+```
 
-从内部实现上，当前按 4 个模块拆：
+### 1. 扫描项目
 
-1. `scanner`
-- 扫描项目矩阵、技术栈、测试、文档、skills、脚本与 git 结构
+```bash
+./start.sh scan /Users/me/projects/my-app
+```
 
-2. `scaffold generator`
-- 为目标项目生成 playbook、tracking、queue、schema、loop 脚本
+你会看到：
+- 技术栈
+- 测试信号
+- 文档信号
+- 推荐 skills
 
-3. `requirement planner`
-- 把一个新需求转换为计划、case 队列和验收标准
+### 2. 给项目生成 AI loop 基础设施
 
-4. `loop runner`
-- 读取当前 case，执行门禁、测试、tracking、commit/push 与 sync recovery
+```bash
+./start.sh scaffold /Users/me/projects/my-app
+```
 
-## 当前阶段
+这一步会在目标项目里生成：
+- `docs/development-playbook.md`
+- `tracking/index.md`
+- `tracking/initial-delivery/...`
+- `.awf/workflow.json`
+- `scripts/<project>-loop`
 
-当前是产品自举开发阶段，项目自身也按 tracking + case 的方式推进。
+### 3. 输入一个需求，生成任务流
 
-已完成：
-- 基础目录与 Python CLI 骨架
-- scanner MVP
-- tracking 模板与基础 schema
+```bash
+./start.sh plan /Users/me/projects/my-app "开发一个新的首页功能模块" "首页和公共组件"
+```
 
-待完成：
-- scaffold generator MVP
-- requirement planner MVP
-- loop runner MVP
-- 项目自身的自举验证
+这一步会生成：
+- `tracking/<task-name>/task_plan.md`
+- `tracking/<task-name>/findings.md`
+- `tracking/<task-name>/progress.md`
+- `tracking/<task-name>/loop_cases.json`
+- `tracking/<task-name>/ai_handoff.md`
 
-## 当前项目结构
+### 4. 把任务交给 AI 编码工具
+
+`ai_handoff.md` 就是给 AI 工具的接力说明。
+
+你可以把它交给：
+- Cursor
+- Codex
+- Claude Code
+
+也可以直接把 `plan` 命令输出里的 `ai_handoff_prompt` 贴给 AI。
+
+### 5. 跑一轮最小 loop
+
+```bash
+./start.sh run-loop /Users/me/projects/my-app /Users/me/projects/my-app/tracking/<task-name>/loop_cases.json
+```
+
+当前版本会：
+- 找到下一个 `pending` case
+- 执行 case 里的命令
+- 更新 case 状态
+- 生成 `runs/*.result.json`
+
+## `start.sh` 支持的命令
+
+```bash
+./start.sh help
+./start.sh scan <workspace>
+./start.sh scaffold <workspace> [output] [project_name] [task_name]
+./start.sh plan <project> <goal> <scope> [task_name]
+./start.sh run-loop <project> <cases_file>
+```
+
+如果你更喜欢直接调 CLI，也支持：
+
+```bash
+PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
+```
+
+## 当前版本边界
+
+当前版本已经跑通：
+- `scan`
+- `scaffold`
+- `plan`
+- `run-loop`
+
+但它还不是完整版，暂时还没有：
+- 自动调用 LLM 写代码
+- 智能拆成很多细 case
+- 完整的 git `pull / commit / push / sync recovery`
+- 多 repo 协同 loop
+
+## 当前目录
 
 ```text
 agent-workflow-factory/
@@ -80,28 +143,6 @@ agent-workflow-factory/
 ├── src/agent_workflow_factory/
 ├── templates/
 ├── tracking/
-│   ├── index.md
-│   └── self-bootstrap-v1/
-├── pyproject.toml
+├── start.sh
 └── README.md
 ```
-
-## MVP 命令
-
-```bash
-cd /Users/cggg/Documents/private/agent-workflow-factory
-PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
-PYTHONPATH=src python3 -m agent_workflow_factory.cli scan --workspace /Users/cggg/Documents/private/chron-matrix
-PYTHONPATH=src python3 -m agent_workflow_factory.cli scaffold --workspace /path/to/workspace --output /path/to/project
-PYTHONPATH=src python3 -m agent_workflow_factory.cli plan --project /path/to/project --goal "接入真实接口" --scope "护士端首页与列表"
-PYTHONPATH=src python3 -m agent_workflow_factory.cli run-loop --project /path/to/project --cases-file /path/to/project/tracking/<task>/loop_cases.json
-```
-
-## 自举路线
-
-当前项目会用自己要生成的那套思路来开发自己：
-
-1. 先在本项目中建立 tracking 与 case 门禁
-2. 再实现 scaffold generator
-3. 再实现 requirement planner
-4. 最后实现 loop runner 并用于本项目自举

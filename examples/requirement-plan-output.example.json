@@ -2,6 +2,7 @@
   "project_dir": "/tmp/example-target",
   "task_name": "connect-real-api",
   "files_created": [
+    "tracking/connect-real-api/ai_handoff.md",
     "tracking/connect-real-api/findings.md",
     "tracking/connect-real-api/loop_cases.json",
     "tracking/connect-real-api/progress.md",
@@ -10,5 +11,7 @@
   "notes": [
     "planner MVP currently emits a generic 5-case queue",
     "next step is to infer finer-grained cases from repo capabilities and requirement complexity"
-  ]
+  ],
+  "ai_handoff_path": "tracking/connect-real-api/ai_handoff.md",
+  "ai_handoff_prompt": "请接手项目 ChronMatrix 的任务 connect-real-api。任务目标是：接入真实接口。作用范围是：护士端首页与列表。先阅读 tracking 下该任务的 task_plan.md、findings.md、progress.md、loop_cases.json 和 docs/development-playbook.md，然后只处理当前允许进入的 case，按 loop 方式推进，并在每个 case 完成后更新 tracking 与验收结果。"
 }

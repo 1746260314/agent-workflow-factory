@@ -14,6 +14,8 @@ class PlanResult:
     task_name: str
     files_created: list[str]
     notes: list[str]
+    ai_handoff_path: str
+    ai_handoff_prompt: str
 
 
 def _slugify(value: str) -> str:
@@ -118,6 +120,46 @@ def _render_progress(task_name: str) -> str:
 """
 
 
+def _render_ai_handoff(project_name: str, task_name: str, goal: str, scope: str) -> str:
+    return f"""# AI Handoff
+
+你现在接手的项目是：`{project_name}`
+
+当前任务：
+- 任务名：`{task_name}`
+- 目标：{goal}
+- 作用范围：{scope}
+
+你需要按以下约束继续工作：
+
+1. 先读取：
+- `tracking/{task_name}/task_plan.md`
+- `tracking/{task_name}/findings.md`
+- `tracking/{task_name}/progress.md`
+- `tracking/{task_name}/loop_cases.json`
+- `docs/development-playbook.md`
+
+2. 只处理当前允许进入的 case
+3. 每完成一个 case，都要：
+- 更新 tracking
+- 执行必要测试或验收
+- 在有远端时完成 commit + push
+4. 当前 case 未完成前，不进入下一个 case
+
+建议你以 loop 方式推进，而不是一次性跨越多个 case。
+"""
+
+
+def _build_ai_handoff_prompt(project_name: str, task_name: str, goal: str, scope: str) -> str:
+    return (
+        f"请接手项目 {project_name} 的任务 {task_name}。"
+        f"任务目标是：{goal}。"
+        f"作用范围是：{scope}。"
+        "先阅读 tracking 下该任务的 task_plan.md、findings.md、progress.md、loop_cases.json 和 docs/development-playbook.md，"
+        "然后只处理当前允许进入的 case，按 loop 方式推进，并在每个 case 完成后更新 tracking 与验收结果。"
+    )
+
+
 def _render_loop_cases(goal: str, scope: str) -> dict[str, Any]:
     return {
         "version": 1,
@@ -203,6 +245,7 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         task_dir / "findings.md": _render_findings(goal, scope),
         task_dir / "progress.md": _render_progress(resolved_task_name),
         task_dir / "loop_cases.json": json.dumps(_render_loop_cases(goal, scope), ensure_ascii=False, indent=2) + "\n",
+        task_dir / "ai_handoff.md": _render_ai_handoff(context["project_name"], resolved_task_name, goal, scope),
     }
 
     for path, content in generated_files.items():
@@ -219,4 +262,6 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
         task_name=resolved_task_name,
         files_created=sorted(files_created),
         notes=notes,
+        ai_handoff_path=str((task_dir / "ai_handoff.md").relative_to(project_dir)),
+        ai_handoff_prompt=_build_ai_handoff_prompt(context["project_name"], resolved_task_name, goal, scope),
     )
