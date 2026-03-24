@@ -1,0 +1,25 @@
+{
+  "project_dir": "/tmp/demo-matrix",
+  "task_name": "v05-demo",
+  "case_count": 13,
+  "files_created": [
+    "tracking/v05-demo/adapters/claude-code.md",
+    "tracking/v05-demo/adapters/codex.md",
+    "tracking/v05-demo/adapters/cursor.md",
+    "tracking/v05-demo/adapters/manual-handoff.md",
+    "tracking/v05-demo/ai_handoff.md",
+    "tracking/v05-demo/executor_request.json",
+    "tracking/v05-demo/findings.md",
+    "tracking/v05-demo/handoff_bundle.json",
+    "tracking/v05-demo/loop_cases.json",
+    "tracking/v05-demo/progress.md",
+    "tracking/v05-demo/task_plan.md"
+  ],
+  "notes": [
+    "planner emitted 13 cases based on requirement signals",
+    "detected signals: {'frontend': true, 'backend': true, 'docs': true, 'test': false, 'multi_repo': true, 'complexity': 'high'}"
+  ],
+  "ai_handoff_path": "tracking/v05-demo/ai_handoff.md",
+  "executor_request_path": "tracking/v05-demo/executor_request.json",
+  "handoff_bundle_path": "tracking/v05-demo/handoff_bundle.json"
+}

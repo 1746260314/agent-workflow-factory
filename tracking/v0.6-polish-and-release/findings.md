@@ -7,3 +7,7 @@
 - README 是否简单清晰
 - CLI 是否足够直接
 - 示例是否能覆盖单 repo、多 repo、executor runtime
+3. 已补发布面收口：
+- `pip install -e .` + `awf --help` 入口说明
+- `docs/release-checklist.md`
+- `examples/README.md`

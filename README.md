@@ -37,6 +37,13 @@ cd agent-workflow-factory
 
 当前直接用本地 Python 运行，不需要额外安装包。
 
+如果你想直接使用全局命令，也可以在仓库内执行：
+
+```bash
+pip install -e .
+awf --help
+```
+
 ## 最短上手流程
 
 假设你的目标项目是：
@@ -84,6 +91,15 @@ cd agent-workflow-factory
 - `tracking/<task-name>/ai_handoff.md`
 - `tracking/<task-name>/executor_request.json`
 - `tracking/<task-name>/handoff_bundle.json`
+
+case 数量会按项目和需求复杂度变化：
+- 单 repo 前端需求：通常是 `6~8` 个 case
+- 多 repo / 高复杂度需求：可以到 `10+` 个 case
+- 每个 case 会带：
+  - `owner_skill`
+  - `depends_on`
+  - `acceptance`
+  - `write_scope`
 
 ### 4. 把任务交给 AI 编码工具
 
@@ -218,7 +234,7 @@ PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
 
 但它还不是完整版，暂时还没有：
 - 自动调用 LLM 写代码
-- 智能拆成很多细 case
+- 无限递归式的子 case 细化
 - 自动 commit 阶段与更完整的执行 phase
 - 多 repo 协同 loop
 - 真实 SDK 级的 Cursor / Codex / Claude Code 执行绑定
@@ -248,3 +264,24 @@ agent-workflow-factory/
 
 可参考：
 - [examples/multi-repo-plan-output.example.json](/Users/cggg/Documents/private/agent-workflow-factory/examples/multi-repo-plan-output.example.json)
+- [examples/fine-grained-plan-output.example.json](/Users/cggg/Documents/private/agent-workflow-factory/examples/fine-grained-plan-output.example.json)
+- [examples/executor-runtime-binding.example.json](/Users/cggg/Documents/private/agent-workflow-factory/examples/executor-runtime-binding.example.json)
+- [examples/executor-result.example.json](/Users/cggg/Documents/private/agent-workflow-factory/examples/executor-result.example.json)
+
+## 发布前建议检查
+
+可按以下顺序自查：
+
+1. `./start.sh scan <workspace>`
+2. `./start.sh scaffold <workspace>`
+3. `./start.sh plan <project> "<goal>" "<scope>"`
+4. `./start.sh list-adapters`
+5. `./start.sh render-adapter <bundle_file> codex`
+6. 如已配置 runtime binding，再执行：
+   - `./start.sh run-executor <project> <task_name> <case_id> codex`
+   - `./start.sh run-loop <project> <cases_file>`
+   - `./start.sh status <project> <cases_file>`
+
+更完整的发布检查见：
+- [docs/release-checklist.md](/Users/cggg/Documents/private/agent-workflow-factory/docs/release-checklist.md)
+- [examples/README.md](/Users/cggg/Documents/private/agent-workflow-factory/examples/README.md)

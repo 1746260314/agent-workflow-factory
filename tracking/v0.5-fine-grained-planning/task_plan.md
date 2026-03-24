@@ -21,7 +21,7 @@ status: active
 
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
-| C1 粒度原则收口 | pending | 明确 case 最小颗粒度和拆解规则 |
-| C2 Planner 分层拆解 | pending | 支持阶段 -> 子 case 的分层生成 |
-| C3 示例与文档增强 | pending | 补复杂需求的输出示例与 README |
-| C4 验收与收口 | pending | 完成 smoke、tracking 和提交 |
+| C1 粒度原则收口 | complete | 已明确 case 最小颗粒度和拆解规则 |
+| C2 Planner 分层拆解 | complete | 已支持更细粒度 case 生成，并输出依赖、验收、写入范围 |
+| C3 示例与文档增强 | complete | 已补复杂需求的输出示例与 README |
+| C4 验收与收口 | complete | smoke 和 tracking 已完成，待 commit + push |

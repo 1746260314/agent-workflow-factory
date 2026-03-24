@@ -21,6 +21,6 @@ status: active
 
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
-| C1 CLI 与 README 打磨 | pending | 收敛用户入口与最短上手流程 |
-| C2 Example Matrix 完善 | pending | 完善单 repo / 多 repo / executor runtime 示例 |
-| C3 发布清单与收口 | pending | 完成 release checklist 与最终 smoke |
+| C1 CLI 与 README 打磨 | complete | 已收敛用户入口与最短上手流程 |
+| C2 Example Matrix 完善 | complete | 已补单 repo / 多 repo / executor runtime / fine-grained 示例 |
+| C3 发布清单与收口 | complete | 已补 release checklist 与 examples README |

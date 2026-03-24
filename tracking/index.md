@@ -30,11 +30,11 @@ status: active
 - 目标：让 loop 能真正调用外部 executor，并把执行结果回填到 case 生命周期
 
 5. `v0.5-fine-grained-planning`
-- 状态：in_progress
+- 状态：completed
 - 目标：把复杂需求细拆成可独立验收的更小 case，而不是停留在中等粒度模板
 
 6. `v0.6-polish-and-release`
-- 状态：pending
+- 状态：completed
 - 目标：完成 CLI、README、examples、多 repo 回归与发布收口
 
 ## 约定
