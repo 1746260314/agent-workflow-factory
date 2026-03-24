@@ -96,6 +96,12 @@ cd agent-workflow-factory
 
 收在一个统一 bundle 里，适合直接交给 AI 工具集成层使用。
 
+现在还会额外生成：
+- `tracking/<task-name>/adapters/cursor.md`
+- `tracking/<task-name>/adapters/codex.md`
+- `tracking/<task-name>/adapters/claude-code.md`
+- `tracking/<task-name>/adapters/manual-handoff.md`
+
 你可以把它交给：
 - Cursor
 - Codex
@@ -139,6 +145,8 @@ cd agent-workflow-factory
 ./start.sh plan <project> <goal> <scope> [task_name]
 ./start.sh run-loop <project> <cases_file>
 ./start.sh status <project> <cases_file>
+./start.sh list-adapters
+./start.sh render-adapter <bundle_file> <adapter> [output]
 ```
 
 如果你更喜欢直接调 CLI，也支持：
@@ -155,12 +163,15 @@ PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
 - `plan`
 - `run-loop`
 - `status`
+- `list-adapters`
+- `render-adapter`
 
 但它还不是完整版，暂时还没有：
 - 自动调用 LLM 写代码
 - 智能拆成很多细 case
 - 自动 commit 阶段与更完整的执行 phase
 - 多 repo 协同 loop
+- 真实 SDK 级的 Cursor / Codex / Claude Code 执行绑定
 
 ## 当前目录
 

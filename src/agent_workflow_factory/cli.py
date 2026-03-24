@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
+from .executor import list_adapters, render_adapter_handoff
 from .scanner import scan_workspace
 from .scaffold import generate_scaffold
 from .planner import plan_requirement
@@ -109,6 +111,25 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_list_adapters(args: argparse.Namespace) -> int:
+    print(json.dumps({"adapters": list_adapters()}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_render_adapter(args: argparse.Namespace) -> int:
+    bundle_file = Path(args.bundle_file).expanduser().resolve()
+    bundle = json.loads(bundle_file.read_text(encoding="utf-8"))
+    rendered = render_adapter_handoff(bundle, args.adapter)
+    if args.output:
+        output = Path(args.output).expanduser().resolve()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered, encoding="utf-8")
+        print(json.dumps({"adapter": args.adapter, "output": str(output)}, ensure_ascii=False, indent=2))
+        return 0
+    print(rendered)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="awf",
@@ -147,6 +168,15 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser.add_argument("--project", required=True, help="project root path")
     status_parser.add_argument("--cases-file", required=True, help="path to loop_cases.json")
     status_parser.set_defaults(func=cmd_status)
+
+    adapters_parser = subparsers.add_parser("list-adapters", help="list supported executor adapters")
+    adapters_parser.set_defaults(func=cmd_list_adapters)
+
+    render_parser = subparsers.add_parser("render-adapter", help="render adapter-specific handoff from a bundle")
+    render_parser.add_argument("--bundle-file", required=True, help="path to handoff_bundle.json")
+    render_parser.add_argument("--adapter", required=True, help="adapter id")
+    render_parser.add_argument("--output", help="optional output file path")
+    render_parser.set_defaults(func=cmd_render_adapter)
 
     return parser
 

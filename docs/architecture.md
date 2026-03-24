@@ -75,6 +75,22 @@ status: active
 - 验证测试、tracking、commit、push 是否完成
 - 做 sync recovery
 
+### 5. Executor Binding
+
+职责：
+
+- 提供统一 adapter registry
+- 生成面向不同 AI 工具的 handoff 产物
+- 为 Cursor / Codex / Claude Code 等工具保留统一入口
+- 让 planner 产出的 bundle 可以被不同 adapter 稳定消费
+
+输出：
+
+- `executor_request.json`
+- `handoff_bundle.json`
+- `tracking/<task-name>/adapters/*.md`
+- `list-adapters` / `render-adapter` CLI
+
 ## 设计原则
 
 1. 人类可读与机器可读并存
@@ -83,6 +99,7 @@ status: active
 4. 多 repo 兼容
 5. 失败可恢复
 6. LLM 可直接消费输出结果
+7. 同一任务可映射到多个 AI 工具 adapter
 
 ## 推荐数据流
 

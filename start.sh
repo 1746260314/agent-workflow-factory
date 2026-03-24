@@ -17,6 +17,8 @@ Usage:
   ./start.sh plan <project> <goal> <scope> [task_name]
   ./start.sh run-loop <project> <cases_file>
   ./start.sh status <project> <cases_file>
+  ./start.sh list-adapters
+  ./start.sh render-adapter <bundle_file> <adapter> [output]
 
 Examples:
   ./start.sh scan /Users/me/projects/my-app
@@ -24,6 +26,8 @@ Examples:
   ./start.sh plan /Users/me/projects/my-app "开发一个新的首页功能模块" "首页和公共组件"
   ./start.sh run-loop /Users/me/projects/my-app /Users/me/projects/my-app/tracking/homepage-feature/loop_cases.json
   ./start.sh status /Users/me/projects/my-app /Users/me/projects/my-app/tracking/homepage-feature/loop_cases.json
+  ./start.sh list-adapters
+  ./start.sh render-adapter /Users/me/projects/my-app/tracking/homepage-feature/handoff_bundle.json cursor
 EOF
 }
 
@@ -65,6 +69,19 @@ case "$cmd" in
     project="${1:?project is required}"
     cases_file="${2:?cases_file is required}"
     run_cli status --project "$project" --cases-file "$cases_file"
+    ;;
+  list-adapters)
+    run_cli list-adapters
+    ;;
+  render-adapter)
+    bundle_file="${1:?bundle_file is required}"
+    adapter="${2:?adapter is required}"
+    output="${3:-}"
+    if [ -n "$output" ]; then
+      run_cli render-adapter --bundle-file "$bundle_file" --adapter "$adapter" --output "$output"
+    else
+      run_cli render-adapter --bundle-file "$bundle_file" --adapter "$adapter"
+    fi
     ;;
   *)
     echo "unknown command: $cmd" >&2

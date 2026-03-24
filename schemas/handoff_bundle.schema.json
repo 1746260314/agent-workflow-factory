@@ -13,6 +13,7 @@
     "paths",
     "recommended_skills",
     "supported_adapters",
+    "adapter_artifacts",
     "adapter_hints",
     "executor_request"
   ],
@@ -52,6 +53,9 @@
     "supported_adapters": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "adapter_artifacts": {
+      "type": "object"
     },
     "adapter_hints": {
       "type": "object"

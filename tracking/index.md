@@ -18,8 +18,12 @@ status: active
 - 目标：用本项目自己的 loop 思路完成本项目 MVP 开发
 
 2. `v0.2-foundation`
-- 状态：in_progress
+- 状态：completed
 - 目标：把 MVP 提升为可长期使用的项目级 AI loop 工具
+
+3. `v0.3-executor-binding`
+- 状态：completed
+- 目标：让产品能够稳定对接 Cursor / Codex / Claude Code 等 AI 工具
 
 ## 约定
 

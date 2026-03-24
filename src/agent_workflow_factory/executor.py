@@ -8,6 +8,60 @@ def _rel(path: Path, root: Path) -> str:
     return str(path.relative_to(root))
 
 
+ADAPTER_REGISTRY: dict[str, dict[str, Any]] = {
+    "manual-handoff": {
+        "id": "manual-handoff",
+        "label": "Manual Handoff",
+        "artifact_format": "markdown",
+        "bundle_input": "handoff_bundle.json",
+        "notes": [
+            "适合人工复制粘贴给任意 AI 工具。",
+            "优先阅读 handoff bundle 和 required_reads。",
+        ],
+    },
+    "cursor": {
+        "id": "cursor",
+        "label": "Cursor",
+        "artifact_format": "markdown",
+        "bundle_input": "handoff_bundle.json",
+        "notes": [
+            "适合在 IDE 对话中直接粘贴 handoff。",
+            "优先读取 bundle 中的 adapter_hints 与 executor_request。",
+        ],
+    },
+    "codex": {
+        "id": "codex",
+        "label": "Codex",
+        "artifact_format": "markdown",
+        "bundle_input": "handoff_bundle.json",
+        "notes": [
+            "适合面向 case 的执行式代理。",
+            "建议按 loop 方式只处理当前 case。",
+        ],
+    },
+    "claude-code": {
+        "id": "claude-code",
+        "label": "Claude Code",
+        "artifact_format": "markdown",
+        "bundle_input": "handoff_bundle.json",
+        "notes": [
+            "适合工程代理式工作流。",
+            "建议先读取 paths 中的 tracking 文件再开始实现。",
+        ],
+    },
+}
+
+
+def list_adapters() -> list[dict[str, Any]]:
+    return [ADAPTER_REGISTRY[key] for key in sorted(ADAPTER_REGISTRY.keys())]
+
+
+def get_adapter(adapter_id: str) -> dict[str, Any]:
+    if adapter_id not in ADAPTER_REGISTRY:
+        raise KeyError(f"unknown adapter: {adapter_id}")
+    return ADAPTER_REGISTRY[adapter_id]
+
+
 def build_executor_request(
     *,
     project_name: str,
@@ -53,10 +107,7 @@ def build_executor_request(
             "项目有远端时，完成提交后应 push",
         ],
         "supported_adapters": [
-            "manual-handoff",
-            "cursor",
-            "codex",
-            "claude-code",
+            adapter["id"] for adapter in list_adapters()
         ],
         "handoff_prompt": (
             f"请接手项目 {project_name} 的任务 {task_name}。"
@@ -66,6 +117,61 @@ def build_executor_request(
             "按 loop 方式推进，并在每个 case 完成后更新 tracking 与验收结果。"
         ),
     }
+
+
+def render_adapter_handoff(bundle: dict[str, Any], adapter_id: str) -> str:
+    adapter = get_adapter(adapter_id)
+    paths = bundle.get("paths") or {}
+    lines = [
+        f"# {adapter['label']} Handoff",
+        "",
+        f"- 项目：`{bundle['project_name']}`",
+        f"- 任务：`{bundle['task_name']}`",
+        f"- 当前 case：`{bundle['current_case_id']}`",
+        f"- 目标：{bundle['goal']}",
+        f"- 范围：{bundle['scope']}",
+        "",
+        "## 优先读取",
+        "",
+        f"1. `{paths.get('executor_request', '')}`",
+        f"2. `{paths.get('task_plan', '')}`",
+        f"3. `{paths.get('findings', '')}`",
+        f"4. `{paths.get('progress', '')}`",
+        f"5. `{paths.get('loop_cases', '')}`",
+    ]
+    playbook = paths.get("playbook", "")
+    if playbook:
+        lines.append(f"6. `{playbook}`")
+
+    lines.extend(
+        [
+            "",
+            "## 执行要求",
+            "",
+            "1. 只处理当前允许进入的 case。",
+            "2. 每完成一个 case，都要更新 tracking。",
+            "3. 先做必要测试或验收，再结束当前 case。",
+            "4. 项目存在远端时，提交后继续 push。",
+            "",
+            "## Adapter 说明",
+            "",
+        ]
+    )
+    lines.extend(f"- {note}" for note in adapter.get("notes") or [])
+    lines.extend(
+        [
+            "",
+            "## 推荐 skills",
+            "",
+            ", ".join(bundle.get("recommended_skills") or []) or "无",
+            "",
+            "## Prompt",
+            "",
+            bundle.get("executor_request", {}).get("handoff_prompt", ""),
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def build_handoff_bundle(
@@ -90,6 +196,10 @@ def build_handoff_bundle(
         loop_script=loop_script,
         case_id=case_id,
     )
+    adapter_artifacts = {
+        adapter["id"]: _rel(task_dir / "adapters" / f"{adapter['id']}.md", project_dir)
+        for adapter in list_adapters()
+    }
     return {
         "version": 1,
         "project_name": project_name,
@@ -110,17 +220,26 @@ def build_handoff_bundle(
         },
         "recommended_skills": recommended_skills,
         "supported_adapters": executor_request["supported_adapters"],
+        "adapter_artifacts": adapter_artifacts,
         "adapter_hints": {
+            "manual-handoff": {
+                "preferred_input": _rel(task_dir / "handoff_bundle.json", project_dir),
+                "artifact": adapter_artifacts["manual-handoff"],
+                "notes": ["适合人工转交。"],
+            },
             "cursor": {
-                "preferred_input": _rel(task_dir / "executor_request.json", project_dir),
-                "notes": ["优先读取 executor_request.json，再读取 required_reads 中列出的文件。"],
+                "preferred_input": _rel(task_dir / "handoff_bundle.json", project_dir),
+                "artifact": adapter_artifacts["cursor"],
+                "notes": ["优先读取 bundle，再查看 rendered handoff。"],
             },
             "codex": {
-                "preferred_input": _rel(task_dir / "executor_request.json", project_dir),
+                "preferred_input": _rel(task_dir / "handoff_bundle.json", project_dir),
+                "artifact": adapter_artifacts["codex"],
                 "notes": ["按 loop 方式只处理当前允许进入的 case。"],
             },
             "claude-code": {
-                "preferred_input": _rel(task_dir / "executor_request.json", project_dir),
+                "preferred_input": _rel(task_dir / "handoff_bundle.json", project_dir),
+                "artifact": adapter_artifacts["claude-code"],
                 "notes": ["先读取 bundle 中的 paths，再开始实现与验收。"],
             },
         },

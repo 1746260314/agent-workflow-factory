@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .executor import build_executor_request, build_handoff_bundle
+from .executor import build_executor_request, build_handoff_bundle, list_adapters, render_adapter_handoff
 from .scanner import scan_workspace
 
 
@@ -399,6 +399,19 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
             indent=2,
         ) + "\n",
     }
+
+    bundle = build_handoff_bundle(
+        project_name=context["project_name"],
+        project_dir=project_dir,
+        task_name=resolved_task_name,
+        goal=goal,
+        scope=scope,
+        recommended_skills=skills,
+        loop_script=((project_dir / ".awf" / "workflow.json").exists() and (_safe_read_json(project_dir / ".awf" / "workflow.json").get("loop_script") or "")) or "",
+    )
+    generated_files[task_dir / "handoff_bundle.json"] = json.dumps(bundle, ensure_ascii=False, indent=2) + "\n"
+    for adapter in list_adapters():
+        generated_files[task_dir / "adapters" / f"{adapter['id']}.md"] = render_adapter_handoff(bundle, adapter["id"])
 
     for path, content in generated_files.items():
         _write_text(path, content)
