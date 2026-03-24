@@ -139,6 +139,10 @@ case 数量会按项目和需求复杂度变化：
 - 执行 case 里的命令
 - 更新 case 状态
 - 生成 `runs/*.result.json`
+- 如果 `loop_policy.git_commit_after_case=true`
+  - 在 case 成功后自动进入 `committing` phase
+  - 执行 `git add -A` + `git commit`
+  - 把 `commit_created` 和 `commit_message` 写回结果
 - 如果 case 是 `execution_mode=executor`
   - 按 `.awf/workflow.json` 中的 runtime binding 调用外部 executor
   - 读取结构化 `executor_result`
@@ -185,6 +189,33 @@ case 数量会按项目和需求复杂度变化：
 
 外部 executor 需要输出符合 `schemas/executor_result.schema.json` 的 JSON。
 
+### 5.2 开启自动 commit
+
+如果你希望 case 成功后由 loop 自动提交，可以在：
+
+```json
+tracking/<task-name>/loop_cases.json
+```
+
+里把：
+
+```json
+{
+  "loop_policy": {
+    "git_commit_after_case": true,
+    "git_commit_message_template": "awf: complete {case_id} {case_title}"
+  }
+}
+```
+
+打开。
+
+当前这版是最小 commit lifecycle：
+- 只在 case 成功后执行
+- 默认 `git add -A`
+- commit 失败会把当前 case 标成 `failed`
+- 还没有更复杂的 staged scope / partial commit 策略
+
 ### 6. 查看 loop 运行状态
 
 ```bash
@@ -195,6 +226,7 @@ case 数量会按项目和需求复杂度变化：
 - loop 主进程是否还活着
 - 当前正在执行哪个 case
 - 当前 phase 是 `implementing`、`testing`、`pushing` 还是 `sync_recovery`
+- 当前 phase 也可能是 `committing`
 - 当前运行目录
 - 最近一次更新时间和最后一条消息
 

@@ -117,6 +117,16 @@ status: active
 """
 
 
+def _render_gitignore() -> str:
+    return """# Agent Workflow Factory runtime artifacts
+.awf/agent_loop_runtime.json
+.awf/state.json
+.awf/*.lock
+tracking/**/runs/
+*.result.json
+"""
+
+
 def _render_task_plan(project_name: str, task_name: str) -> str:
     return f"""---
 title: {project_name} Initial Task Plan
@@ -177,7 +187,9 @@ def _render_loop_cases(project_name: str) -> dict[str, Any]:
         "project": project_name,
         "loop_policy": {
             "git_pull_before_case": True,
+            "git_commit_after_case": False,
             "git_push_after_case": False,
+            "git_commit_message_template": "awf: complete {case_id} {case_title}",
             "max_sync_retries": 2
         },
         "workflow_rules": [
@@ -297,6 +309,7 @@ def generate_scaffold(workspace: str, output: str, project_name: str | None = No
 
     generated_files: dict[Path, str] = {
         docs_dir / "development-playbook.md": _render_playbook(resolved_project_name, primary_repo, recommended_skills),
+        output_dir / ".gitignore": _render_gitignore(),
         output_dir / "tracking" / "index.md": _render_tracking_index(resolved_project_name),
         tracking_dir / "task_plan.md": _render_task_plan(resolved_project_name, task_name),
         tracking_dir / "findings.md": _render_findings(),

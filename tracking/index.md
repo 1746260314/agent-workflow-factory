@@ -37,6 +37,10 @@ status: active
 - 状态：completed
 - 目标：完成 CLI、README、examples、多 repo 回归与发布收口
 
+7. `v0.7-practical-commit-lifecycle`
+- 状态：completed
+- 目标：补最小可用的 commit lifecycle，让 loop 在 case 成功后可以自动提交并暴露更完整 phase
+
 ## 约定
 
 1. 不在项目根目录直接放 `task_plan.md`、`findings.md`、`progress.md`

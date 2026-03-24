@@ -157,6 +157,13 @@ def _worktree_is_clean(root: Path) -> bool:
     return True
 
 
+def _worktree_has_changes(root: Path) -> bool:
+    status = _git(["status", "--porcelain"], root)
+    if status.returncode != 0:
+        return False
+    return any(line.strip() for line in status.stdout.splitlines())
+
+
 def _has_remote(root: Path) -> bool:
     remote = _git(["remote"], root)
     return remote.returncode == 0 and bool(remote.stdout.strip())
@@ -167,6 +174,27 @@ def _current_branch(root: Path) -> str:
     if branch.returncode != 0:
         return ""
     return branch.stdout.strip()
+
+
+def _commit_message(case: dict[str, Any], template: str = "") -> str:
+    if template:
+        return template.format(case_id=case.get("id") or "", case_title=case.get("title") or "")
+    case_id = (case.get("id") or "").strip()
+    case_title = (case.get("title") or "").strip()
+    return f"awf: complete {case_id} {case_title}".strip()
+
+
+def _perform_commit(root: Path, case: dict[str, Any], template: str = "") -> tuple[bool, str, str]:
+    added = _git(["add", "-A"], root)
+    if added.returncode != 0:
+        return False, "", (added.stderr or added.stdout or "").strip()
+    if not _worktree_has_changes(root):
+        return False, "", "no changes to commit"
+    message = _commit_message(case, template)
+    committed = _git(["commit", "-m", message], root)
+    if committed.returncode != 0:
+        return False, message, (committed.stderr or committed.stdout or "").strip()
+    return True, message, ""
 
 
 def _build_result(
@@ -466,7 +494,9 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
     git_enabled = _is_git_repo(root)
     branch = _current_branch(root) if git_enabled else ""
     do_pull = bool(loop_policy.get("git_pull_before_case")) and git_enabled and _has_remote(root)
+    do_commit = bool(loop_policy.get("git_commit_after_case")) and git_enabled
     do_push = bool(loop_policy.get("git_push_after_case")) and git_enabled and _has_remote(root)
+    commit_message_template = str(loop_policy.get("git_commit_message_template") or "")
 
     if case_id == "git_sync_manual_intervention":
         current_case["status"] = "blocked"
@@ -624,6 +654,71 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             result_path = _persist_result(cases_path, case_id, result)
             return LoopRunResult(case_id, "blocked", result_path, [], result["notes"])
 
+    def _maybe_commit_or_fail(
+        *,
+        summary: str,
+        notes: str,
+        files_for_result: list[str],
+        tests_for_result: list[str],
+        executor_invoked: bool = False,
+        executor_adapter: str = "",
+        external_result_path: str = "",
+    ) -> tuple[bool, str, LoopRunResult | None]:
+        if not do_commit:
+            return False, "", None
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="committing",
+            current_run_dir=str(root),
+            last_message="creating git commit",
+        )
+        commit_created, commit_message, commit_error = _perform_commit(root, current_case, commit_message_template)
+        if commit_error and commit_error != "no changes to commit":
+            current_case["status"] = "failed"
+            current_case.setdefault("history", []).append(
+                {
+                    "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    "status": "failed",
+                    "notes": f"commit failed: {commit_error}",
+                }
+            )
+            _write_json(cases_path, payload)
+            _write_runtime(
+                root,
+                running=False,
+                started_at=started_at,
+                iteration=iteration,
+                current_case_id=case_id,
+                current_case_title=current_case.get("title", case_id),
+                phase="blocked",
+                current_run_dir=str(root),
+                last_message=f"commit failed: {commit_error}",
+            )
+            result = _build_result(
+                case_id,
+                "failed",
+                summary,
+                tests_for_result,
+                f"commit failed: {commit_error}",
+                files_for_result,
+                git_sync_performed=do_pull,
+                git_push_attempted=False,
+                git_push_succeeded=False,
+                commit_created=False,
+                commit_message=commit_message,
+                executor_invoked=executor_invoked,
+                executor_adapter=executor_adapter,
+                external_result_path=external_result_path,
+            )
+            result_path = _persist_result(cases_path, case_id, result)
+            return False, commit_message, LoopRunResult(case_id, "failed", result_path, tests_for_result, result["notes"])
+        return commit_created, commit_message, None
+
     if current_case.get("execution_mode") == "executor":
         workflow = _load_workflow(root)
         default_adapter = (((workflow.get("executor") or {}).get("default_adapter")) or "")
@@ -654,23 +749,58 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             default_adapter=default_adapter,
         )
         tests_run.extend(invoked.tests_run)
+        commit_created = invoked.commit_created
+        commit_message = invoked.commit_message
         if invoked.status == "completed":
             current_case["status"] = "completed"
+            current_case.setdefault("history", []).append(
+                {
+                    "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    "status": current_case["status"],
+                    "adapter": invoked.adapter,
+                    "command": invoked.command,
+                    "result_file": invoked.result_file,
+                    "notes": invoked.notes,
+                }
+            )
+            _write_json(cases_path, payload)
+            commit_created, commit_message, failure = _maybe_commit_or_fail(
+                summary=invoked.summary or current_case.get("title", case_id),
+                notes=invoked.notes or invoked.summary,
+                files_for_result=files_touched + invoked.files_touched + [invoked.result_file],
+                tests_for_result=tests_run,
+                executor_invoked=True,
+                executor_adapter=invoked.adapter,
+                external_result_path=invoked.result_file,
+            )
+            if failure is not None:
+                return failure
         elif invoked.status == "blocked":
             current_case["status"] = "blocked"
+            current_case.setdefault("history", []).append(
+                {
+                    "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    "status": current_case["status"],
+                    "adapter": invoked.adapter,
+                    "command": invoked.command,
+                    "result_file": invoked.result_file,
+                    "notes": invoked.notes,
+                }
+            )
+            _write_json(cases_path, payload)
         else:
             current_case["status"] = "failed"
-        current_case.setdefault("history", []).append(
-            {
-                "timestamp": datetime.now().isoformat(timespec="seconds"),
-                "status": current_case["status"],
-                "adapter": invoked.adapter,
-                "command": invoked.command,
-                "result_file": invoked.result_file,
-                "notes": invoked.notes,
-            }
-        )
-        _write_json(cases_path, payload)
+            current_case.setdefault("history", []).append(
+                {
+                    "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    "status": current_case["status"],
+                    "adapter": invoked.adapter,
+                    "command": invoked.command,
+                    "result_file": invoked.result_file,
+                    "notes": invoked.notes,
+                }
+            )
+            _write_json(cases_path, payload)
         final_phase = "completed" if current_case["status"] == "completed" else "blocked"
         _write_runtime(
             root,
@@ -693,8 +823,8 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             git_sync_performed=do_pull,
             git_push_attempted=False,
             git_push_succeeded=False,
-            commit_created=invoked.commit_created,
-            commit_message=invoked.commit_message,
+            commit_created=commit_created,
+            commit_message=commit_message,
             executor_invoked=True,
             executor_adapter=invoked.adapter,
             external_result_path=invoked.result_file,
@@ -791,6 +921,30 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             result_path = _persist_result(cases_path, case_id, result)
             return LoopRunResult(case_id, "failed", result_path, tests_run, result["notes"])
 
+    current_case["status"] = "completed"
+    current_case.setdefault("history", []).append(
+        {
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "status": "completed",
+            "commands": commands,
+            "git_pull": do_pull,
+            "git_commit": do_commit,
+            "git_push": do_push,
+        }
+    )
+    _write_json(cases_path, payload)
+
+    commit_created = False
+    commit_message = ""
+    commit_created, commit_message, failure = _maybe_commit_or_fail(
+        summary=current_case.get("title", case_id),
+        notes="commands completed successfully",
+        files_for_result=files_touched,
+        tests_for_result=tests_run,
+    )
+    if failure is not None:
+        return failure
+
     if do_push and branch:
         _write_runtime(
             root,
@@ -838,20 +992,12 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
                 git_sync_performed=do_pull,
                 git_push_attempted=True,
                 git_push_succeeded=False,
+                commit_created=commit_created,
+                commit_message=commit_message,
             )
             result_path = _persist_result(cases_path, case_id, result)
             return LoopRunResult(case_id, "blocked", result_path, tests_run, result["notes"])
 
-    current_case["status"] = "completed"
-    current_case.setdefault("history", []).append(
-        {
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-            "status": "completed",
-            "commands": commands,
-            "git_pull": do_pull,
-            "git_push": do_push,
-        }
-    )
     if git_enabled and branch:
         state = _load_state(root)
         bucket = state.setdefault("sync_recovery", {})
@@ -860,7 +1006,6 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             if key in bucket:
                 del bucket[key]
         _write_state(root, state)
-    _write_json(cases_path, payload)
     _write_runtime(
         root,
         running=False,
@@ -883,6 +1028,8 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
         git_sync_performed=do_pull,
         git_push_attempted=do_push,
         git_push_succeeded=do_push,
+        commit_created=commit_created,
+        commit_message=commit_message,
     )
     result_path = _persist_result(cases_path, case_id, result)
     return LoopRunResult(case_id, "completed", result_path, tests_run, result["notes"])

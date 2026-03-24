@@ -433,7 +433,9 @@ def _render_loop_cases(goal: str, scope: str, cases: list[dict[str, Any]], signa
         "planning_signals": signals,
         "loop_policy": {
             "git_pull_before_case": True,
+            "git_commit_after_case": False,
             "git_push_after_case": False,
+            "git_commit_message_template": "awf: complete {case_id} {case_title}",
             "max_sync_retries": 2
         },
         "workflow_rules": [
