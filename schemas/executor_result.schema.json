@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Executor Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "case_id",
+    "status",
+    "summary",
+    "notes",
+    "tests_run",
+    "tests_passed",
+    "files_touched",
+    "commit_created",
+    "commit_message",
+    "created_at"
+  ],
+  "properties": {
+    "version": { "type": "integer" },
+    "case_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "blocked", "failed"]
+    },
+    "summary": { "type": "string" },
+    "notes": { "type": "string" },
+    "tests_run": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tests_passed": { "type": "boolean" },
+    "files_touched": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "commit_created": { "type": "boolean" },
+    "commit_message": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+}

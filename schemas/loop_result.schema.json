@@ -15,7 +15,10 @@
     "notes",
     "git_sync_performed",
     "git_push_attempted",
-    "git_push_succeeded"
+    "git_push_succeeded",
+    "executor_invoked",
+    "executor_adapter",
+    "external_result_path"
   ],
   "properties": {
     "case_id": { "type": "string" },
@@ -38,6 +41,9 @@
     "notes": { "type": "string" },
     "git_sync_performed": { "type": "boolean" },
     "git_push_attempted": { "type": "boolean" },
-    "git_push_succeeded": { "type": "boolean" }
+    "git_push_succeeded": { "type": "boolean" },
+    "executor_invoked": { "type": "boolean" },
+    "executor_adapter": { "type": "string" },
+    "external_result_path": { "type": "string" }
   }
 }

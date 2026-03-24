@@ -19,6 +19,7 @@ Usage:
   ./start.sh status <project> <cases_file>
   ./start.sh list-adapters
   ./start.sh render-adapter <bundle_file> <adapter> [output]
+  ./start.sh run-executor <project> <task_name> <case_id> [adapter]
 
 Examples:
   ./start.sh scan /Users/me/projects/my-app
@@ -28,6 +29,7 @@ Examples:
   ./start.sh status /Users/me/projects/my-app /Users/me/projects/my-app/tracking/homepage-feature/loop_cases.json
   ./start.sh list-adapters
   ./start.sh render-adapter /Users/me/projects/my-app/tracking/homepage-feature/handoff_bundle.json cursor
+  ./start.sh run-executor /Users/me/projects/my-app homepage-feature C2 codex
 EOF
 }
 
@@ -81,6 +83,17 @@ case "$cmd" in
       run_cli render-adapter --bundle-file "$bundle_file" --adapter "$adapter" --output "$output"
     else
       run_cli render-adapter --bundle-file "$bundle_file" --adapter "$adapter"
+    fi
+    ;;
+  run-executor)
+    project="${1:?project is required}"
+    task_name="${2:?task_name is required}"
+    case_id="${3:?case_id is required}"
+    adapter="${4:-}"
+    if [ -n "$adapter" ]; then
+      run_cli run-executor --project "$project" --task-name "$task_name" --case-id "$case_id" --adapter "$adapter"
+    else
+      run_cli run-executor --project "$project" --task-name "$task_name" --case-id "$case_id"
     fi
     ;;
   *)

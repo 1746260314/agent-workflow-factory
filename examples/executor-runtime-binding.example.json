@@ -1,0 +1,27 @@
+{
+  "executor": {
+    "default_adapter": "codex",
+    "supported_adapters": [
+      "manual-handoff",
+      "cursor",
+      "codex",
+      "claude-code"
+    ],
+    "runtime": {
+      "bindings": {
+        "manual-handoff": {
+          "enabled": false,
+          "mode": "manual",
+          "command_template": "",
+          "result_source": "stdout"
+        },
+        "codex": {
+          "enabled": true,
+          "mode": "external_command",
+          "command_template": "python3 {project_root}/mock_executor.py {case_id} {result_file}",
+          "result_source": "file"
+        }
+      }
+    }
+  }
+}

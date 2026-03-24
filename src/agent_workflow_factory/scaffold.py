@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .executor import default_runtime_bindings
 from .scanner import scan_workspace
 
 
@@ -288,6 +289,9 @@ def generate_scaffold(workspace: str, output: str, project_name: str | None = No
         "executor": {
             "default_adapter": "manual-handoff",
             "supported_adapters": ["manual-handoff", "cursor", "codex", "claude-code"],
+            "runtime": {
+                "bindings": default_runtime_bindings(),
+            },
         },
     }
 

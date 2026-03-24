@@ -52,6 +52,47 @@ ADAPTER_REGISTRY: dict[str, dict[str, Any]] = {
 }
 
 
+def default_runtime_bindings() -> dict[str, dict[str, Any]]:
+    return {
+        "manual-handoff": {
+            "enabled": False,
+            "mode": "manual",
+            "command_template": "",
+            "result_source": "stdout",
+            "notes": [
+                "默认只生成 handoff 文件，不自动执行。",
+            ],
+        },
+        "cursor": {
+            "enabled": False,
+            "mode": "external_command",
+            "command_template": "",
+            "result_source": "stdout",
+            "notes": [
+                "填入可调用 Cursor Agent 的命令模板后可启用。",
+            ],
+        },
+        "codex": {
+            "enabled": False,
+            "mode": "external_command",
+            "command_template": "",
+            "result_source": "stdout",
+            "notes": [
+                "填入可调用 Codex 的命令模板后可启用。",
+            ],
+        },
+        "claude-code": {
+            "enabled": False,
+            "mode": "external_command",
+            "command_template": "",
+            "result_source": "stdout",
+            "notes": [
+                "填入可调用 Claude Code 的命令模板后可启用。",
+            ],
+        },
+    }
+
+
 def list_adapters() -> list[dict[str, Any]]:
     return [ADAPTER_REGISTRY[key] for key in sorted(ADAPTER_REGISTRY.keys())]
 

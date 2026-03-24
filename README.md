@@ -11,11 +11,14 @@ status: active
 
 给一个项目生成 AI 持续开发所需的基础设施。
 
-它当前能做 4 件事：
+它当前能做这些事：
 - 扫描目标项目
 - 给目标项目生成 playbook、tracking、loop 骨架
 - 把一个需求转成任务流和 case 队列
 - 跑一轮最小 loop
+- 输出运行态 status
+- 生成 adapter-specific handoff 产物
+- 按 workflow 配置调用 executor runtime
 
 ## 适合谁
 
@@ -120,6 +123,51 @@ cd agent-workflow-factory
 - 执行 case 里的命令
 - 更新 case 状态
 - 生成 `runs/*.result.json`
+- 如果 case 是 `execution_mode=executor`
+  - 按 `.awf/workflow.json` 中的 runtime binding 调用外部 executor
+  - 读取结构化 `executor_result`
+  - 回填到 case 状态和最终 loop result
+
+### 5.1 配置 executor runtime
+
+如果你希望 loop 真正调用外部 AI 工具，而不只是生成 handoff 文件，需要在目标项目的：
+
+```bash
+.awf/workflow.json
+```
+
+里配置某个 adapter 的 runtime binding，例如：
+
+```json
+{
+  "executor": {
+    "default_adapter": "codex",
+    "runtime": {
+      "bindings": {
+        "codex": {
+          "enabled": true,
+          "mode": "external_command",
+          "command_template": "python3 {project_root}/mock_executor.py {case_id} {result_file}",
+          "result_source": "file"
+        }
+      }
+    }
+  }
+}
+```
+
+占位符会在运行时被替换：
+- `{project_root}`
+- `{task_name}`
+- `{case_id}`
+- `{case_title}`
+- `{cases_file}`
+- `{bundle_file}`
+- `{request_file}`
+- `{result_file}`
+- `{adapter}`
+
+外部 executor 需要输出符合 `schemas/executor_result.schema.json` 的 JSON。
 
 ### 6. 查看 loop 运行状态
 
@@ -147,6 +195,7 @@ cd agent-workflow-factory
 ./start.sh status <project> <cases_file>
 ./start.sh list-adapters
 ./start.sh render-adapter <bundle_file> <adapter> [output]
+./start.sh run-executor <project> <task_name> <case_id> [adapter]
 ```
 
 如果你更喜欢直接调 CLI，也支持：
@@ -165,6 +214,7 @@ PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
 - `status`
 - `list-adapters`
 - `render-adapter`
+- `run-executor`
 
 但它还不是完整版，暂时还没有：
 - 自动调用 LLM 写代码
@@ -172,6 +222,11 @@ PYTHONPATH=src python3 -m agent_workflow_factory.cli --help
 - 自动 commit 阶段与更完整的执行 phase
 - 多 repo 协同 loop
 - 真实 SDK 级的 Cursor / Codex / Claude Code 执行绑定
+
+当前 executor runtime 是：
+- 通用外部 command binding
+- 结构化结果回填
+- 不直接耦合私有 SDK
 
 ## 当前目录
 

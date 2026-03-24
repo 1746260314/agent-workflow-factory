@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .executor import list_adapters, render_adapter_handoff
+from .executor_runtime import invoke_executor_runtime
 from .scanner import scan_workspace
 from .scaffold import generate_scaffold
 from .planner import plan_requirement
@@ -130,6 +131,51 @@ def cmd_render_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run_executor(args: argparse.Namespace) -> int:
+    project_dir = Path(args.project).expanduser().resolve()
+    task_dir = project_dir / "tracking" / args.task_name
+    cases_file = task_dir / "loop_cases.json"
+    bundle_file = task_dir / "handoff_bundle.json"
+    request_file = task_dir / "executor_request.json"
+    payload = json.loads(cases_file.read_text(encoding="utf-8"))
+    target_case = None
+    for case in payload.get("cases") or []:
+        if case.get("id") == args.case_id:
+            target_case = case
+            break
+    if target_case is None:
+        raise SystemExit(f"case not found: {args.case_id}")
+    if args.adapter:
+        target_case.setdefault("executor", {})["adapter"] = args.adapter
+    result_file = task_dir / "runs" / f"{args.case_id}.manual-executor.json"
+    result = invoke_executor_runtime(
+        project_root=project_dir,
+        task_name=args.task_name,
+        case=target_case,
+        cases_file=cases_file,
+        bundle_file=bundle_file,
+        request_file=request_file,
+        result_file=result_file,
+        default_adapter=args.adapter or "",
+    )
+    print(
+        json.dumps(
+            {
+                "case_id": result.case_id,
+                "status": result.status,
+                "summary": result.summary,
+                "notes": result.notes,
+                "adapter": result.adapter,
+                "command": result.command,
+                "result_file": result.result_file,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="awf",
@@ -177,6 +223,13 @@ def build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument("--adapter", required=True, help="adapter id")
     render_parser.add_argument("--output", help="optional output file path")
     render_parser.set_defaults(func=cmd_render_adapter)
+
+    run_executor_parser = subparsers.add_parser("run-executor", help="invoke a configured executor adapter for a case")
+    run_executor_parser.add_argument("--project", required=True, help="project root path")
+    run_executor_parser.add_argument("--task-name", required=True, help="tracking task name")
+    run_executor_parser.add_argument("--case-id", required=True, help="case id")
+    run_executor_parser.add_argument("--adapter", help="optional adapter override")
+    run_executor_parser.set_defaults(func=cmd_run_executor)
 
     return parser
 

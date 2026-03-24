@@ -52,6 +52,7 @@ def _load_project_context(project_dir: Path) -> dict[str, Any]:
             "project_name": manifest.get("project_name") or project_dir.name,
             "scan_result": scan_result,
             "recommended_skills": manifest.get("recommended_skills") or scan_result.get("recommended_skills") or [],
+            "workflow": manifest,
         }
 
     scan_result = scan_workspace(str(project_dir))
@@ -59,6 +60,7 @@ def _load_project_context(project_dir: Path) -> dict[str, Any]:
         "project_name": project_dir.name,
         "scan_result": scan_result,
         "recommended_skills": scan_result.get("recommended_skills") or [],
+        "workflow": {},
     }
 
 
@@ -97,117 +99,50 @@ def _detect_requirement_signals(goal: str, scope: str, tech_stack: list[str], sc
     }
 
 
-def _build_cases(goal: str, scope: str, signals: dict[str, Any]) -> list[dict[str, Any]]:
+def _case_payload(case_id: str, title: str, goal: str, adapter: str) -> dict[str, Any]:
+    return {
+        "id": case_id,
+        "title": title,
+        "status": "pending",
+        "goal": goal,
+        "execution_mode": "executor",
+        "executor": {
+            "adapter": adapter,
+        },
+        "commands": [],
+        "tests": [],
+        "notes": [],
+        "history": [],
+    }
+
+
+def _build_cases(goal: str, scope: str, signals: dict[str, Any], default_adapter: str) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = [
-        {
-            "id": "C1",
-            "title": "对齐需求与边界",
-            "status": "pending",
-            "goal": "确认需求目标、范围、约束和已有上下文",
-            "commands": [],
-            "tests": [],
-            "notes": [],
-            "history": [],
-        },
-        {
-            "id": "C2",
-            "title": "设计实现方案",
-            "status": "pending",
-            "goal": "设计本轮实现所需的结构、接口、数据模型和策略",
-            "commands": [],
-            "tests": [],
-            "notes": [],
-            "history": [],
-        },
+        _case_payload("C1", "对齐需求与边界", "确认需求目标、范围、约束和已有上下文", default_adapter),
+        _case_payload("C2", "设计实现方案", "设计本轮实现所需的结构、接口、数据模型和策略", default_adapter),
     ]
 
     next_id = 3
     if signals["frontend"]:
-        cases.append(
-            {
-                "id": f"C{next_id}",
-                "title": "前端页面与组件实现",
-                "status": "pending",
-                "goal": "完成页面、组件、交互或样式相关实现",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            }
-        )
+        cases.append(_case_payload(f"C{next_id}", "前端页面与组件实现", "完成页面、组件、交互或样式相关实现", default_adapter))
         next_id += 1
 
     if signals["backend"]:
-        cases.append(
-            {
-                "id": f"C{next_id}",
-                "title": "后端接口与数据实现",
-                "status": "pending",
-                "goal": "完成接口、服务、数据模型或数据库相关实现",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            }
-        )
+        cases.append(_case_payload(f"C{next_id}", "后端接口与数据实现", "完成接口、服务、数据模型或数据库相关实现", default_adapter))
         next_id += 1
 
     if signals["complexity"] == "high":
-        cases.append(
-            {
-                "id": f"C{next_id}",
-                "title": "结构与依赖收口",
-                "status": "pending",
-                "goal": "处理跨模块或跨仓库的结构调整与依赖问题",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            }
-        )
+        cases.append(_case_payload(f"C{next_id}", "结构与依赖收口", "处理跨模块或跨仓库的结构调整与依赖问题", default_adapter))
         next_id += 1
 
     if signals["docs"]:
-        cases.append(
-            {
-                "id": f"C{next_id}",
-                "title": "文档与规则更新",
-                "status": "pending",
-                "goal": "同步更新说明文档、规则或示例",
-                "commands": [],
-                "tests": [],
-                "notes": [],
-                "history": [],
-            }
-        )
+        cases.append(_case_payload(f"C{next_id}", "文档与规则更新", "同步更新说明文档、规则或示例", default_adapter))
         next_id += 1
 
-    cases.append(
-        {
-            "id": f"C{next_id}",
-            "title": "测试与验收",
-            "status": "pending",
-            "goal": "完成构建、测试、smoke 或联调验收",
-            "commands": [],
-            "tests": [],
-            "notes": [],
-            "history": [],
-        }
-    )
+    cases.append(_case_payload(f"C{next_id}", "测试与验收", "完成构建、测试、smoke 或联调验收", default_adapter))
     next_id += 1
 
-    cases.append(
-        {
-            "id": f"C{next_id}",
-            "title": "收口与同步",
-            "status": "pending",
-            "goal": "更新 tracking，按规则完成提交、推送或阻塞记录",
-            "commands": [],
-            "tests": [],
-            "notes": [],
-            "history": [],
-        }
-    )
+    cases.append(_case_payload(f"C{next_id}", "收口与同步", "更新 tracking，按规则完成提交、推送或阻塞记录", default_adapter))
     return cases
 
 
@@ -361,7 +296,8 @@ def plan_requirement(project: str, goal: str, scope: str, task_name: str | None 
     skills = context.get("recommended_skills") or []
     tech_stack = _collect_tech_stack(context)
     signals = _detect_requirement_signals(goal, scope, tech_stack, context.get("scan_result") or {})
-    cases = _build_cases(goal, scope, signals)
+    default_adapter = (((context.get("workflow") or {}).get("executor") or {}).get("default_adapter")) or "manual-handoff"
+    cases = _build_cases(goal, scope, signals, default_adapter)
 
     task_dir = project_dir / "tracking" / resolved_task_name
     files_created: list[str] = []

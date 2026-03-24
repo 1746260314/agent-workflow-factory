@@ -34,6 +34,20 @@
             "type": "string",
             "enum": ["pending", "in_progress", "completed", "blocked", "failed", "sync_pending"]
           },
+          "execution_mode": {
+            "type": "string",
+            "enum": ["commands", "executor"]
+          },
+          "executor": {
+            "type": "object",
+            "properties": {
+              "adapter": { "type": "string" },
+              "enabled": { "type": "boolean" },
+              "mode": { "type": "string" },
+              "command_template": { "type": "string" },
+              "result_source": { "type": "string" }
+            }
+          },
           "goal": { "type": "string" },
           "commands": {
             "type": "array",

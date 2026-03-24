@@ -9,7 +9,8 @@
     "workspace_scan",
     "task_name",
     "recommended_skills",
-    "loop_script"
+    "loop_script",
+    "executor"
   ],
   "properties": {
     "version": { "type": "integer" },
@@ -20,6 +21,7 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "loop_script": { "type": "string" }
+    "loop_script": { "type": "string" },
+    "executor": { "type": "object" }
   }
 }

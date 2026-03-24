@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .executor_runtime import invoke_executor_runtime
 
 @dataclass
 class LoopRunResult:
@@ -98,6 +99,16 @@ def _detect_command_phase(command: str) -> str:
     return "implementing"
 
 
+def _load_workflow(root: Path) -> dict[str, Any]:
+    path = root / ".awf" / "workflow.json"
+    if not path.exists():
+        return {}
+    try:
+        return _load_json(path)
+    except Exception:
+        return {}
+
+
 def _find_next_case(cases: list[dict[str, Any]]) -> dict[str, Any] | None:
     for case in cases:
         if case.get("status") == "pending":
@@ -171,6 +182,9 @@ def _build_result(
     git_push_succeeded: bool = False,
     commit_created: bool = False,
     commit_message: str = "",
+    executor_invoked: bool = False,
+    executor_adapter: str = "",
+    external_result_path: str = "",
 ) -> dict[str, Any]:
     return {
         "case_id": case_id,
@@ -185,6 +199,9 @@ def _build_result(
         "git_sync_performed": git_sync_performed,
         "git_push_attempted": git_push_attempted,
         "git_push_succeeded": git_push_succeeded,
+        "executor_invoked": executor_invoked,
+        "executor_adapter": executor_adapter,
+        "external_result_path": external_result_path,
     }
 
 
@@ -606,6 +623,84 @@ def run_loop_once(project_root: str, cases_file: str) -> LoopRunResult:
             )
             result_path = _persist_result(cases_path, case_id, result)
             return LoopRunResult(case_id, "blocked", result_path, [], result["notes"])
+
+    if current_case.get("execution_mode") == "executor":
+        workflow = _load_workflow(root)
+        default_adapter = (((workflow.get("executor") or {}).get("default_adapter")) or "")
+        task_name = cases_path.parent.name
+        bundle_file = cases_path.parent / "handoff_bundle.json"
+        request_file = cases_path.parent / "executor_request.json"
+        executor_result_file = cases_path.parent / "runs" / f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{case_id}.executor.json"
+        executor_adapter = ((current_case.get("executor") or {}).get("adapter")) or default_adapter or "manual-handoff"
+        _write_runtime(
+            root,
+            running=True,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase="implementing",
+            current_run_dir=str(root),
+            last_message=f"invoking executor adapter: {executor_adapter}",
+        )
+        invoked = invoke_executor_runtime(
+            project_root=root,
+            task_name=task_name,
+            case=current_case,
+            cases_file=cases_path,
+            bundle_file=bundle_file,
+            request_file=request_file,
+            result_file=executor_result_file,
+            default_adapter=default_adapter,
+        )
+        tests_run.extend(invoked.tests_run)
+        if invoked.status == "completed":
+            current_case["status"] = "completed"
+        elif invoked.status == "blocked":
+            current_case["status"] = "blocked"
+        else:
+            current_case["status"] = "failed"
+        current_case.setdefault("history", []).append(
+            {
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
+                "status": current_case["status"],
+                "adapter": invoked.adapter,
+                "command": invoked.command,
+                "result_file": invoked.result_file,
+                "notes": invoked.notes,
+            }
+        )
+        _write_json(cases_path, payload)
+        final_phase = "completed" if current_case["status"] == "completed" else "blocked"
+        _write_runtime(
+            root,
+            running=False,
+            started_at=started_at,
+            iteration=iteration,
+            current_case_id=case_id,
+            current_case_title=current_case.get("title", case_id),
+            phase=final_phase,
+            current_run_dir=str(root),
+            last_message=invoked.summary or invoked.notes,
+        )
+        result = _build_result(
+            case_id,
+            current_case["status"],
+            invoked.summary or current_case.get("title", case_id),
+            tests_run,
+            invoked.notes or invoked.summary,
+            files_touched + invoked.files_touched + [invoked.result_file],
+            git_sync_performed=do_pull,
+            git_push_attempted=False,
+            git_push_succeeded=False,
+            commit_created=invoked.commit_created,
+            commit_message=invoked.commit_message,
+            executor_invoked=True,
+            executor_adapter=invoked.adapter,
+            external_result_path=invoked.result_file,
+        )
+        result_path = _persist_result(cases_path, case_id, result)
+        return LoopRunResult(case_id, current_case["status"], result_path, tests_run, result["notes"])
 
     commands = current_case.get("commands") or []
     if not commands:
