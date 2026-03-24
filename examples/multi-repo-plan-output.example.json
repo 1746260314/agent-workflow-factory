@@ -1,0 +1,22 @@
+{
+  "project_dir": "/tmp/example-workspace",
+  "task_name": "refactor-loop-runner",
+  "case_count": 8,
+  "files_created": [
+    "tracking/refactor-loop-runner/ai_handoff.md",
+    "tracking/refactor-loop-runner/executor_request.json",
+    "tracking/refactor-loop-runner/findings.md",
+    "tracking/refactor-loop-runner/handoff_bundle.json",
+    "tracking/refactor-loop-runner/loop_cases.json",
+    "tracking/refactor-loop-runner/progress.md",
+    "tracking/refactor-loop-runner/task_plan.md"
+  ],
+  "notes": [
+    "planner emitted 8 cases based on requirement signals",
+    "detected signals: {'frontend': False, 'backend': True, 'docs': True, 'test': False, 'multi_repo': True, 'complexity': 'high'}"
+  ],
+  "ai_handoff_path": "tracking/refactor-loop-runner/ai_handoff.md",
+  "executor_request_path": "tracking/refactor-loop-runner/executor_request.json",
+  "handoff_bundle_path": "tracking/refactor-loop-runner/handoff_bundle.json",
+  "ai_handoff_prompt": "请接手项目 ExampleWorkspace 的任务 refactor-loop-runner。任务目标是：重构多 repo loop runner。作用范围是：workspace scripts、tracking、sync policy。先阅读 tracking 下该任务的 task_plan.md、findings.md、progress.md、loop_cases.json 和 docs/development-playbook.md，然后只处理当前允许进入的 case，按 loop 方式推进，并在每个 case 完成后更新 tracking 与验收结果。"
+}

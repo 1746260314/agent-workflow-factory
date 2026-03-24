@@ -58,6 +58,7 @@ status: active
 3. `executor_request.json` 应与 `ai_handoff.md` 并存：
    - markdown 继续服务人工阅读
    - JSON 负责被 Cursor/Codex/Claude Code 等工具程序化消费
+4. 当接入真实 AI 工具时，单个 `executor_request.json` 仍然偏底层；还需要一个更高层的 bundle，把路径、adapter hints 和 request 本身收拢到一个入口对象里。
 
 ## Runtime Status 新发现
 
@@ -68,3 +69,23 @@ status: active
    - 最近一次更新时间是什么时候
 2. 所以 `status` 命令不能只读静态 case 队列，必须优先读运行态文件。
 3. 运行态文件应被忽略，不进入 git；它属于可观察性层，不是项目源码的一部分。
+
+## 多 Repo 示例新发现
+
+1. 用户很难仅凭 README 理解 “multi_repo=true” 会带来什么实际差异，示例输出比口头说明更有效。
+2. 多 repo 场景下，最有价值的不是展示完整 scan 结果，而是展示 `plan` 结果里：
+   - case 数量变多
+   - notes 明确带上 `multi_repo=true`
+   - handoff bundle 依然保持统一入口
+
+## 当前收口判断
+
+1. `v0.2 foundation` 这一轮的目标已经达到：
+   - planner 不再固定 5-case
+   - loop 已具备 git/sync 基础生命周期
+   - handoff 已升级成 bundle
+   - runtime status 已可观测
+   - 多 repo 示例已补齐
+2. 下一轮的价值重点不再是补基础骨架，而是：
+   - 继续把 case 拆得更细
+   - 让 loop 真正绑定 AI 执行器

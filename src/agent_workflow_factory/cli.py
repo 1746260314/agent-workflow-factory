@@ -75,6 +75,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
                 "notes": result.notes,
                 "ai_handoff_path": result.ai_handoff_path,
                 "executor_request_path": result.executor_request_path,
+                "handoff_bundle_path": result.handoff_bundle_path,
                 "ai_handoff_prompt": result.ai_handoff_prompt,
             },
             ensure_ascii=False,

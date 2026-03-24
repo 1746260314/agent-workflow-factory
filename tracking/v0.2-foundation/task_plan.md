@@ -24,8 +24,8 @@ status: active
 | C1 路线图与基线收口 | complete | 已明确 v0.2 目标、边界、里程碑和 case 顺序 |
 | C2 Planner 增强 | complete | 已让需求拆解从固定 5-case 升级为按复杂度和项目能力生成 |
 | C3 Loop Git/Sync 增强 | complete | 已完成 git pull/push 门禁、sync recovery、人工介入升级链路 |
-| C4 AI Executor 接口增强 | in_progress | 已补统一 executor request 接口，正在扩展更完整的 handoff bundle |
-| C5 多 repo 与示例增强 | pending | 让多 repo/workspace 场景更明确，并补充文档与示例 |
+| C4 AI Executor 接口增强 | complete | 已补 executor request，并完成统一 handoff bundle 输出 |
+| C5 多 repo 与示例增强 | complete | 已补 workspace 示例，并完成 README / schema / examples 收口 |
 
 ## Case 清单
 
@@ -39,9 +39,9 @@ status: active
 | C3.2 实现 git lifecycle runner MVP | completed | 已为 `run-loop` 引入 clean check、pull/push 门禁，并完成 sync recovery 与人工升级策略 | `awf run-loop` smoke |
 | C3.3 增加 runtime status 层 | completed | 已增加 `agent_loop_runtime.json` 和 `status` 命令，可在运行中查看活跃状态 | `awf status` smoke |
 | C4.1 定义 executor adapter 接口 | completed | 已新增机器可读的 `executor_request.json` 与 executor schema，供不同 AI 工具消费 | `awf plan` smoke |
-| C4.2 生成 AI tool handoff bundle | pending | 输出更完整的 handoff 包而不是单文件 | 示例可用 |
-| C5.1 补多 repo 示例 | pending | 使用 workspace 示例验证多 repo 输出 | 示例可读 |
-| C5.2 文档与发布收口 | pending | README、架构文档、示例、边界说明同步 | 文档完整 |
+| C4.2 生成 AI tool handoff bundle | completed | 已生成 `handoff_bundle.json`，将路径、skills、adapter hints 和 executor request 收拢到统一入口 | `awf plan` smoke |
+| C5.1 补多 repo 示例 | completed | 已补 workspace 场景输出示例，说明多 repo 任务会生成更细 case | 示例可读 |
+| C5.2 文档与发布收口 | completed | README、路线图、schema、示例与 tracking 已同步到 v0.2 当前能力 | 文档完整 |
 
 ## 当前结论
 
@@ -63,3 +63,8 @@ status: active
    - 当前 case / phase
    - 当前运行目录
    - 最近更新时间与最后消息
+7. `plan` 现在会输出统一 handoff bundle：
+   - `ai_handoff.md`
+   - `executor_request.json`
+   - `handoff_bundle.json`
+8. 多 repo/workspace 场景已有示例输出，可直接对照 case 数量和 bundle 结构

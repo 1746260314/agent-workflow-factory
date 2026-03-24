@@ -11,6 +11,7 @@
     "notes",
     "ai_handoff_path",
     "executor_request_path",
+    "handoff_bundle_path",
     "ai_handoff_prompt"
   ],
   "properties": {
@@ -27,6 +28,7 @@
     },
     "ai_handoff_path": { "type": "string" },
     "executor_request_path": { "type": "string" },
+    "handoff_bundle_path": { "type": "string" },
     "ai_handoff_prompt": { "type": "string" }
   }
 }

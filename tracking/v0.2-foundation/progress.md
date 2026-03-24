@@ -45,12 +45,22 @@ status: active
 - 完成 runtime status smoke：
   - 运行中返回 `source=runtime`
   - 完成后回退到静态队列视图
+- `plan` 现在会额外生成 `handoff_bundle.json`
+- 新增 `schemas/handoff_bundle.schema.json`
+- 完成 handoff bundle smoke：
+  - `plan` CLI 正确返回 bundle 相关文件
+  - bundle 内含 `paths`、`adapter_hints`、`executor_request`
+- 新增多 repo 示例：
+  - `examples/multi-repo-plan-output.example.json`
+- README 已同步 handoff bundle 与 `status` 用法
+- `v0.2-roadmap.md` 已同步 runtime status 目标
+- `requirement_plan.schema.json` 已同步 `handoff_bundle_path`
 
-### 进行中
+### 当前状态
 
-- `C4.2 生成 AI tool handoff bundle`
+- `v0.2 foundation` 已完成
 
 ### 下一步
 
-1. 将 `ai_handoff.md + executor_request.json` 收敛为更完整的 handoff bundle
-2. 再补 README、examples 与 schema 示例
+1. 进入下一轮能力增强，优先考虑更细粒度 case 拆解或真实 executor 绑定
+2. 如需继续演进，可单独新开 `tracking/v0.3-*` 任务流

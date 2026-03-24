@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Handoff Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "project_name",
+    "task_name",
+    "goal",
+    "scope",
+    "current_case_id",
+    "paths",
+    "recommended_skills",
+    "supported_adapters",
+    "adapter_hints",
+    "executor_request"
+  ],
+  "properties": {
+    "version": { "type": "integer" },
+    "project_name": { "type": "string" },
+    "task_name": { "type": "string" },
+    "goal": { "type": "string" },
+    "scope": { "type": "string" },
+    "current_case_id": { "type": "string" },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_plan",
+        "findings",
+        "progress",
+        "loop_cases",
+        "ai_handoff",
+        "executor_request",
+        "playbook"
+      ],
+      "properties": {
+        "task_plan": { "type": "string" },
+        "findings": { "type": "string" },
+        "progress": { "type": "string" },
+        "loop_cases": { "type": "string" },
+        "ai_handoff": { "type": "string" },
+        "executor_request": { "type": "string" },
+        "playbook": { "type": "string" }
+      }
+    },
+    "recommended_skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "supported_adapters": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "adapter_hints": {
+      "type": "object"
+    },
+    "executor_request": {
+      "type": "object"
+    }
+  }
+}

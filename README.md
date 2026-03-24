@@ -80,12 +80,21 @@ cd agent-workflow-factory
 - `tracking/<task-name>/loop_cases.json`
 - `tracking/<task-name>/ai_handoff.md`
 - `tracking/<task-name>/executor_request.json`
+- `tracking/<task-name>/handoff_bundle.json`
 
 ### 4. 把任务交给 AI 编码工具
 
 `ai_handoff.md` 就是给 AI 工具的接力说明。
 
 `executor_request.json` 是机器可读的 handoff 输入，适合被不同 AI 工具或后续 executor adapter 直接读取。
+
+`handoff_bundle.json` 则把：
+- tracking 文件路径
+- 推荐 skills
+- executor request
+- adapter hints
+
+收在一个统一 bundle 里，适合直接交给 AI 工具集成层使用。
 
 你可以把它交给：
 - Cursor
@@ -166,3 +175,10 @@ agent-workflow-factory/
 ├── start.sh
 └── README.md
 ```
+
+## 多 repo / workspace 示例
+
+如果你的目标项目本身是一个 workspace 或项目矩阵，`plan` 会把 `multi_repo` 作为信号之一，自动把 case 拆得更细。
+
+可参考：
+- [examples/multi-repo-plan-output.example.json](/Users/cggg/Documents/private/agent-workflow-factory/examples/multi-repo-plan-output.example.json)
